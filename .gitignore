@@ -1,0 +1,8 @@
+.qodo
+.env
+*.ipynb
+error_log.txt
+25630.xlsx
+.sentry-native
+.venv
+__pycache__
