@@ -15,6 +15,7 @@ class Car(BaseModel):
     boite_de_vitesse: str
     parent_car_id: int
     updated_at: str
+    matching_percentage: float
 
 
 class Filter(BaseModel):

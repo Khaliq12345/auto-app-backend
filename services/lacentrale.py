@@ -125,7 +125,7 @@ def get_filter_url(car_dict):
 @utils.runner
 def main(car_dict: dict) -> list[Car]:
     url = get_filter_url(car_dict)
-    cars = get_the_listing_html(url, domain, car_dict["id"])
+    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"])
     utils.parse_and_save(car_dict, cars)
 
 
