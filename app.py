@@ -4,6 +4,7 @@ from utilities import utils
 import threading
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
 from supabase import Client, AuthApiError, create_client
 from datetime import datetime
@@ -45,6 +46,14 @@ def start_services(client: Client, dev: bool = True):
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/login")
