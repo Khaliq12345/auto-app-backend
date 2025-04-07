@@ -2,14 +2,16 @@ from services import autoscout24, lacentrale
 import pandas as pd
 from utilities import utils
 import threading
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
 from supabase import Client, AuthApiError, create_client
 from datetime import datetime
+import os
+import aiofiles
 
-
+OUT_FILE = "25630.xlsx"
 session_deps = Depends()
 
 
@@ -168,6 +170,47 @@ def get_start_scraping(
         raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+
+@app.post("/upload")
+async def upload_file(file: UploadFile):
+    """
+    Upload a large file to the server via streaming.
+
+    Args:
+        file (UploadFile): The file to upload (.xlsx or .xls)
+
+    Returns:
+        dict: Upload status and file path
+    """
+    # Validate file
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    # Validate file extension
+    file_extension = os.path.splitext(file.filename)[1].lower()
+    allowed_extensions = {".xlsx", ".xls"}
+    if file_extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, detail="Only Excel files (.xlsx, .xls) are allowed"
+        )
+
+    try:
+        # Stream the file to disk in chunks
+        async with aiofiles.open(OUT_FILE, "wb") as out_file:
+            while chunk := await file.read(256 * 256):  # Read 1MB chunks
+                await out_file.write(chunk)
+
+    except Exception as e:
+        # Clean up if something goes wrong
+        if os.path.exists(OUT_FILE):
+            os.remove(OUT_FILE)
+        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+
+    finally:
+        # Ensure the file is closed
+        await file.close()
+    return {"message": "File uploaded successfully", "file_path": OUT_FILE}
 
 
 if __name__ == "__main__":
