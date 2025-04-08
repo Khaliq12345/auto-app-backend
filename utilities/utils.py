@@ -5,6 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 import traceback
 from config import config
+import os
 
 url = config.SUPABASE_URL
 supabase_key = config.SUPABASE_KEY
@@ -41,6 +42,7 @@ def save_to_db(data: dict | list[dict], table: str):
 
 
 def parse_and_save(car_dict: dict, cars: list[Car]):
+    car_dict['updated_at'] = datetime.now().isoformat()
     jsoned_cars = jsonable_encoder(cars)
     compared_car_dicts = drop_duplicate_cars(jsoned_cars)
     if compared_car_dicts:
@@ -54,10 +56,14 @@ def runner(func):
             func(*args, **kwargs)
         except Exception as e:
             car_dict: dict = args[0]
-            with open("./error_log.txt", "a") as error_file:
+            log_path = '/logs/error_log.txt'
+            if not os.path.exists(log_path):
+                with open(log_path, "w") as f:
+                    pass
+            with open(log_path, "a") as error_file:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 error_file.write(
-                    f"[{timestamp}] Error processing car_dict {car_dict.get('id', 'unknown')}:\n"
+                    f"Time {timestamp}:\n"
                 )
                 error_file.write(f"Error type: {type(e).__name__}\n")
                 error_file.write(f"Error message: {str(e)}\n")

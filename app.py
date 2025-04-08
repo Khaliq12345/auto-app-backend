@@ -21,31 +21,42 @@ def get_session() -> Client:
     )
     return client
 
-
+@utils.runner
 def start_services(client: Client, dev: bool = True):
-    if dev:
-        df = pd.read_excel("25630.xlsx", header=None).sample(10)
-    else:
-        df = pd.read_excel("25630.xlsx", header=None)
-    for row_id in range(len(df)):
-        car_dict = utils.get_row_dict(df, row_id)
-        print(f"Car Info - {car_dict}")
-        thread1 = threading.Thread(target=autoscout24.main, args=(car_dict,))
-        thread2 = threading.Thread(target=lacentrale.main, args=(car_dict,))
-        thread1.start()
-        thread2.start()
-        thread1.join()
-        thread2.join()
-        client.table("Status").upsert(
-            {
-                "id": 1,
-                "status": "success",
-                "stopped_at": datetime.now().isoformat(),
-                "total_completed": row_id + 1,
-                "total_running": len(df),
-            }
-        ).execute()
-
+    try:
+        if dev:
+            df = pd.read_excel(OUT_FILE, header=None).sample(10)
+        else:
+            df = pd.read_excel(OUT_FILE, header=None)
+        for row_id in range(len(df)):
+            car_dict = utils.get_row_dict(df, row_id)
+            print(f"Car Info - {car_dict}")
+            thread1 = threading.Thread(target=autoscout24.main, args=(car_dict,))
+            thread2 = threading.Thread(target=lacentrale.main, args=(car_dict,))
+            thread1.start()
+            thread2.start()
+            thread1.join()
+            thread2.join()
+            if (row_id + 1) == len(df):
+                stats = 'success'
+                stopped_at = datetime.now().isoformat()
+            else:
+                stopped_at = None
+                stats = 'running'
+            client.table("Status").update(
+                {
+                    "id": 1,
+                    "status": stats,
+                    "stopped_at": stopped_at,
+                    "total_completed": row_id + 1,
+                    "total_running": len(df),
+                }
+            ).eq('id', 1).execute()
+    except Exception as e:
+        client.table("Status").update(
+            {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
+        ).eq('id', 1).execute()
+        raise e
 
 app = FastAPI()
 
@@ -62,7 +73,7 @@ app.add_middleware(
 def login(client: Annotated[Client, Depends(get_session)], email: str, password: str):
     try:
         response = client.auth.sign_in_with_password(
-            credentials={"email": "test@gmail.com", "password": "test12345"}
+            credentials={"email": email, "password": password}
         )
         return {"message": "Login successful", "details": jsonable_encoder(response)}
     except AuthApiError:
@@ -158,17 +169,30 @@ def get_start_scraping(
             access_token=access_token,
             refresh_token=refresh_token,
         )
-        background_task.add_task(start_services, client, dev)
-        return {
-            "message": "Scraping started",
-            "session": jsonable_encoder(auth),
-        }
+        response = client.table('Status').select('status').eq('id', 1).execute()
+        if response.data[0]['status'] != 'running':
+            background_task.add_task(start_services, client, dev)
+            client.table("Status").update(
+                {"id": 1, "status": "running", "started_at": datetime.now().isoformat(), 'total_completed': 0}
+            ).eq('id', 1).execute()
+            return {
+                "message": "Scraping started",
+                "session": jsonable_encoder(auth),
+            }
+        else:
+            return {
+                "message": "Scraping already started",
+                "session": jsonable_encoder(auth),
+            }
     except Exception as e:
-        client.table("Status").upsert(
+        client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
-        ).execute()
+        ).eq('id', 1).execute()
         raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
+        client.table("Status").update(
+            {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
+        ).eq('id', 1).execute()
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
