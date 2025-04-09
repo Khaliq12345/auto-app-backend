@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 import aiofiles
 
-OUT_FILE = "/uploads/25630.xlsx"
+OUT_FILE = "./uploads/25630.xlsx"
 session_deps = Depends()
 
 
@@ -20,6 +20,7 @@ def get_session() -> Client:
         supabase_key=utils.supabase_key, supabase_url=utils.url
     )
     return client
+
 
 @utils.runner
 def start_services(client: Client, dev: bool = True):
@@ -38,11 +39,11 @@ def start_services(client: Client, dev: bool = True):
             thread1.join()
             thread2.join()
             if (row_id + 1) == len(df):
-                stats = 'success'
+                stats = "success"
                 stopped_at = datetime.now().isoformat()
             else:
                 stopped_at = None
-                stats = 'running'
+                stats = "running"
             client.table("Status").update(
                 {
                     "id": 1,
@@ -51,12 +52,13 @@ def start_services(client: Client, dev: bool = True):
                     "total_completed": row_id + 1,
                     "total_running": len(df),
                 }
-            ).eq('id', 1).execute()
+            ).eq("id", 1).execute()
     except Exception as e:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
-        ).eq('id', 1).execute()
+        ).eq("id", 1).execute()
         raise e
+
 
 app = FastAPI()
 
@@ -169,12 +171,17 @@ def get_start_scraping(
             access_token=access_token,
             refresh_token=refresh_token,
         )
-        response = client.table('Status').select('status').eq('id', 1).execute()
-        if response.data[0]['status'] != 'running':
+        response = client.table("Status").select("status").eq("id", 1).execute()
+        if response.data[0]["status"] != "running":
             background_task.add_task(start_services, client, dev)
             client.table("Status").update(
-                {"id": 1, "status": "running", "started_at": datetime.now().isoformat(), 'total_completed': 0}
-            ).eq('id', 1).execute()
+                {
+                    "id": 1,
+                    "status": "running",
+                    "started_at": datetime.now().isoformat(),
+                    "total_completed": 0,
+                }
+            ).eq("id", 1).execute()
             return {
                 "message": "Scraping started",
                 "session": jsonable_encoder(auth),
@@ -187,12 +194,12 @@ def get_start_scraping(
     except Exception as e:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
-        ).eq('id', 1).execute()
+        ).eq("id", 1).execute()
         raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
-        ).eq('id', 1).execute()
+        ).eq("id", 1).execute()
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
@@ -238,7 +245,8 @@ async def upload_file(file: UploadFile):
 
 
 if __name__ == "__main__":
-    start_services(dev=True)
+    client = get_session()
+    start_services(client, dev=True)
 
 
 # Try to set up the api on the server.

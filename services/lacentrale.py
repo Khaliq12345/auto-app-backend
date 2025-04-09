@@ -3,6 +3,7 @@ from model.model import Filter, Car
 import httpx
 from utilities import utils
 from browser import get_the_listing_html
+from selectolax.parser import HTMLParser
 
 domain = "https://www.lacentrale.fr/"
 
@@ -32,6 +33,61 @@ params = {
     "families": "AUTO,UTILITY",
     "makesModelsCommercialNames": "CUPRA",
 }
+
+
+def extract_10_cars(
+    soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
+) -> list[Car]:
+    cars = []
+    for x in soup.css("div.searchCard"):
+        price = x.css_first(
+            'div[class="Text_Text_text Text_Text_subtitle-large vehiclecardV2_vehiclePrice__En33S"]'
+        )
+        price = (
+            float(utils.get_text(price).replace("€", "").replace(" ", "").strip())
+            if price
+            else None
+        )
+        characs = x.css('div[class="Text_Text_text Text_Text_body-medium"]')
+        if len(characs) < 4:
+            continue
+        mileage = (
+            float(utils.get_text(characs[2]).replace("km", "").replace(" ", "").strip())
+            if characs[2]
+            else None
+        )
+        deal_type = utils.get_text(x.css_first('span[class="Tag_Tag_label"]'))
+        name = utils.get_text(x.css_first("h2"))
+        sub_name = utils.get_text(x.css_first("div.vehiclecardV2_subTitle__c8h4X"))
+        fuel_type = utils.get_text(characs[3])
+        boite_de_vitesse = utils.get_text(characs[1])
+        image = x.css_first("img")
+        image = image.attributes.get("src") if image else None
+        image = image.split("?")[0] if image else None
+        link = x.css_first("a")
+        link = (
+            f"https://www.lacentrale.fr{link.attributes.get('href')}" if link else link
+        )
+        cars.append(
+            Car(
+                id="",
+                name=name,
+                price=price,
+                deal_type=deal_type,
+                link=link,
+                image=image,
+                mileage=mileage,
+                car_metadata=sub_name,
+                domain=domain,
+                fuel_type=fuel_type,
+                boite_de_vitesse=boite_de_vitesse,
+                parent_car_id=parent_car_id,
+                updated_at=updated_at,
+                matching_percentage=0.0,
+            )
+        )
+
+    return cars
 
 
 def user_prompt(models, colors, versions, fuel_types, target_dict):
@@ -125,7 +181,7 @@ def get_filter_url(car_dict):
 @utils.runner
 def main(car_dict: dict) -> list[Car]:
     url = get_filter_url(car_dict)
-    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"])
+    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"], extract_10_cars)
     utils.parse_and_save(car_dict, cars)
 
 

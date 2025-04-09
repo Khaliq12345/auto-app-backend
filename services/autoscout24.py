@@ -1,5 +1,5 @@
 from browser import client, types, HEADERS
-from model.model import Filter
+from model.model import Filter, Car
 from utilities import utils
 from browser import get_the_listing_html
 import json
@@ -7,6 +7,46 @@ from selectolax.parser import HTMLParser
 import httpx
 
 domain = "https://www.autoscout24.fr/"
+
+
+def extract_10_cars(
+    soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
+) -> list[Car]:
+    cars = []
+    for x in soup.css("main article")[:10]:
+        price = x.attributes.get("data-price")
+        mileage = x.attributes.get("data-mileage")
+        deal_type = x.attributes.get("data-price-label")
+        name = utils.get_text(x.css_first("h2"))
+        sub_name = utils.get_text(x.css_first('span[class="ListItem_subtitle__VEw08"]'))
+        fuel_type = utils.get_text(x.css_first('span[aria-label="Carburant"]'))
+        boite_de_vitesse = utils.get_text(x.css_first('span[aria-label="Boîte"]'))
+        image = x.css_first("img")
+        image = image.attributes.get("src") if image else None
+        link = x.css_first("a")
+        link = (
+            f"https://www.autoscout24.fr{link.attributes.get('href')}" if link else link
+        )
+        cars.append(
+            Car(
+                id="",
+                name=name,
+                price=price,
+                deal_type=deal_type,
+                link=link,
+                image=image,
+                mileage=mileage,
+                car_metadata=sub_name,
+                domain=domain,
+                fuel_type=fuel_type,
+                boite_de_vitesse=boite_de_vitesse,
+                parent_car_id=parent_car_id,
+                updated_at=updated_at,
+                matching_percentage=0.0,
+            )
+        )
+
+    return cars
 
 
 def user_prompt(models: dict, colors: dict, fuel_types: dict, target_dict: dict):
@@ -110,7 +150,7 @@ def get_filter_url(car_dict):
 @utils.runner
 def main(car_dict: dict):
     url = get_filter_url(car_dict)
-    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"])
+    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"], extract_10_cars)
     utils.parse_and_save(car_dict, cars)
 
 

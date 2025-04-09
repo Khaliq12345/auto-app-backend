@@ -1,13 +1,12 @@
 from selectolax.parser import HTMLParser
 from google import genai
 from google.genai import types
-from html_to_markdown import convert_to_markdown
-from model.model import Car
-from urllib.parse import urljoin
+from model.model import Car, Match
 from config import config
 import hashlib
 from datetime import datetime
 import httpx
+import json
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -24,83 +23,44 @@ HEADERS = {
 }
 
 
-def prompt(metadata: dict, car_dict: dict) -> str:
-    """
-    Generate a prompt for extracting car information from a Markdown source.
-
-    Args:
-        metadata (dict): Metadata containing the site's base URL to complete car links.
-        car_dict (dict): Dictionary containing car info to calculate matching percentage.
-
-    Returns:
-        str: A formatted prompt string with instructions for data extraction.
-    """
+def prompt(car1_details: dict, car2_details: dict) -> str:
     return f"""
-    1. Extract the first 10 cars' information from the provided Markdown content.
-    2. Ensure each car's information includes the following fields exactly as they appear on the site:
-       - Make
-       - Model
-       - Year
-       - Price (convert to float)
-       - Mileage (convert to float)
-       - Link (complete the URL if needed)
-    3. Use the provided page metadata to complete the car's link if the link is relative:
-       - Metadata: {metadata}
-       - If the car's link is relative (e.g., '/cars/123'), prepend the site's base URL from the metadata (e.g., 'https://example.com') to form a full URL (e.g., 'https://example.com/cars/123').
-    4. Convert the 'Price' and 'Mileage' fields to float values:
-       - Remove any currency symbols, commas, or units (e.g., '$12,345' -> 12345.0, '15,000 miles' -> 15000.0).
-    5. Remove unnecessary whitespace from all fields (e.g., '  Toyota  ' -> 'Toyota').
-    6. Include the metadata in the output alongside the extracted car data.
-    7. Calculate a matching percentage for each car based on the provided car info, giving higher weight to Mileage due to its importance in pricing:
-       - Car info for matching: {car_dict}
-       - Compare fields like Make, Model, Year, Price, and Mileage with the following weights:
-         - Mileage: 40% (since it's critical for pricing)
-         - Make: 15%
-         - Model: 15%
-         - Year: 15%
-         - Price: 15%
-       - Matching percentage should be a float (e.g., 85.5) based on how closely the car matches the provided car_dict.
-       - For each field:
-         - **Mileage**: Calculate the percentage match as (1 - |car_dict['Mileage'] - car['Mileage']| / max(car_dict['Mileage'], car['Mileage'])) * 100, then multiply by 0.4 (40% weight).
-         - **Make, Model, Year**: If they match exactly (case-insensitive), assign 100% for that field; otherwise, 0%. Multiply by 0.15 (15% weight) for each.
-         - **Price**: Calculate the percentage match as (1 - |car_dict['Price'] - car['Price']| / max(car_dict['Price'], car['Price'])) * 100, then multiply by 0.15 (15% weight).
-       - Sum the weighted scores to get the final matching percentage (e.g., 40% Mileage + 15% Make + 15% Model + 15% Year + 15% Price).
-       - Example: If car_dict has Make='Toyota', Model='Camry', Year=2020, Price=25000, Mileage=15000:
-         - Extracted car: Toyota Camry, 2020, $24,000, 14,000 miles
-         - Mileage match: (1 - |15000 - 14000| / 15000) * 100 = 93.33% → 93.33 * 0.4 = 37.33
-         - Make match: 100% → 100 * 0.15 = 15
-         - Model match: 100% → 100 * 0.15 = 15
-         - Year match: 100% → 100 * 0.15 = 15
-         - Price match: (1 - |25000 - 24000| / 25000) * 100 = 96% → 96 * 0.15 = 14.4
-         - Total: 37.33 + 15 + 15 + 15 + 14.4 = 96.73%
-    8. Ensure data integrity:
-       - Extract data EXACTLY as it appears on the site (e.g., do not change 'Camry XLE' to 'Camry' unless that's how it's listed).
-       - Do not infer or modify values; preserve the original data's formatting except for the float conversion and whitespace removal.
+    You are an expert in automotive comparisons. 
+    I will provide you with details of two cars, including their make, model, version (if available), and mileage. "
+    "Your task is to compare these two cars and calculate a percentage match based on the following attributes: make, model, version, and mileage. "
+    "Use your car knowledge to enhance the comparison, especially for the version attribute, 
+    by considering factors like generation, engine specifications, trim level, and additional features. "
+    "Assign weights to each attribute as follows: make (20%), model (20%), version (20%), and mileage (40%, given more weight due to its significance in condition assessment). "
+    "For each attribute: "
+    "- **Make**: Score 1.0 for an exact match, 0.0 otherwise. "
+    "- **Model**: Score 1.0 for an exact match, 0.0 otherwise. "
+    "- **Version**: Score between 0.0 and 1.0 based on similarity (e.g., generation, engine size, trim, features). Use your car expertise to estimate partial matches (e.g., same trim but different engines = partial score). "
+    "- **Mileage**: Calculate a score between 0.0 and 1.0 using the formula `1 - (difference / max_range)`, where `max_range` is 200,000 km (a typical lifespan for most cars), and cap the score at 0 if the difference exceeds the range. "
+    "Provide the final percentage match by summing the weighted scores (make_score * 0.20 + model_score * 0.20 + version_score * 0.20 + mileage_score * 0.40) and multiplying by 100. "
+    "Here are the details for the two cars: "
+    "- Car 1: {car1_details} "
+    "- Car 2: {car2_details} "
+    "Return the percentage match as a float"
     """
 
 
-def extract_10_cars(soup: HTMLParser, car_dict: dict, domain: str) -> list[Car]:
-    metas = "; ".join([meta.html for meta in soup.css("meta")])
-    listing_page = soup.css_first(selectors[domain])
-    if listing_page:
-        markdown = convert_to_markdown(listing_page.html)
-        metadata_of_page = convert_to_markdown(metas)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[markdown, prompt(metadata_of_page, car_dict)],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=list[Car],
-                system_instruction="You are an Intelligent Html Parser Bot, that prioritze data intergrity.",
-            ),
-        )
-        cars: list[Car] = response.parsed
-        return cars
-    return []
+def get_percentage_match(car1_details: dict, car2_details: dict):
+    print("Calculating the percentage match")
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt(car1_details, car2_details),
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Match,
+            system_instruction="You are an expert in automotive comparisons.",
+        ),
+    )
+    percentage_percent: Match = response.parsed
+    return percentage_percent.matching_percentage
 
 
 def get_the_listing_html(
-    car_dict: str, filter_url: str, domain: str, parent_car_id: str
+    car_dict: dict, filter_url: str, domain: str, parent_car_id: str, extract_10_cars
 ) -> list[Car]:
     print(f"Fetching the listing page - {filter_url}")
     json_data = {
@@ -120,12 +80,14 @@ def get_the_listing_html(
     if json_data.get("results"):
         content = json_data.get("results")[0]["content"]
     soup = HTMLParser(content)
-    ten_cars = extract_10_cars(soup, car_dict, domain)
+    ten_cars: list[Car] = extract_10_cars(
+        soup, domain, parent_car_id, datetime.now().isoformat()
+    )
     print(f"Found - {len(ten_cars)} cars")
     for car in ten_cars:
-        car.domain = domain
-        car.link = urljoin(domain, car.link)
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.parent_car_id = parent_car_id
-        car.updated_at = datetime.now().isoformat()
+        car.matching_percentage = get_percentage_match(
+            json.dumps(car_dict), car.model_dump_json()
+        )
+        print(car.matching_percentage)
     return ten_cars
