@@ -52,6 +52,7 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
     row["color"] = row_raw_dict[397]
     row["mileage"] = row_raw_dict[9]
     row["fuel_type"] = row_raw_dict[109]
+    row["price"] = row_raw_dict[10]
     return row
 
 
