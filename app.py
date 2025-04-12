@@ -53,7 +53,7 @@ def start_services(client: Client, dev: bool = True):
                     "total_running": len(df),
                 }
             ).eq("id", 1).execute()
-    except Exception as e:
+    except BaseException as e:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
         ).eq("id", 1).execute()
