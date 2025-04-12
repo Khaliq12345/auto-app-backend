@@ -77,7 +77,7 @@ def runner(func):
         try:
             func(*args, **kwargs)
         except Exception as e:
-            log_path = "./logs/error_log.txt"
+            log_path = "/logs/error_log.txt"
             if not os.path.exists(log_path):
                 with open(log_path, "w") as f:
                     pass

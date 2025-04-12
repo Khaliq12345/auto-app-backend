@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 import aiofiles
 
-OUT_FILE = "./uploads/25630.xlsx"
+OUT_FILE = "/uploads/25630.xlsx"
 session_deps = Depends()
 
 
