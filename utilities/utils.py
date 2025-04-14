@@ -7,6 +7,7 @@ import traceback
 from config import config
 import os
 from selectolax.parser import Node
+from dateparser import parse
 
 url = config.SUPABASE_URL
 supabase_key = config.SUPABASE_KEY
@@ -53,6 +54,9 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
     row["mileage"] = row_raw_dict[9]
     row["fuel_type"] = row_raw_dict[109]
     row["price"] = row_raw_dict[10]
+    date = parse(row_raw_dict[8])
+    row["year_from"] = date.year
+    row["year_to"] = date.year
     return row
 
 

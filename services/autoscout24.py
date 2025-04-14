@@ -142,8 +142,12 @@ def get_filter_url(car_dict):
         ),
     )
     car_filter: Filter = response.parsed
+    print(car_filter)
     car_filter.model = car_filter.model.replace(" ", "-").lower()
-    filter_url = f"https://www.autoscout24.fr/lst/{car_filter.make.lower()}/{car_filter.model}?bcol={car_filter.color}&fuel={car_filter.fuel_type}&version0={car_filter.version}"
+    km_from = abs(round(car_filter.mileage - 5000))
+    km_to = abs(round(car_filter.mileage + 5000))
+    # bcol={car_filter.color}
+    filter_url = f"https://www.autoscout24.fr/lst/{car_filter.make.lower()}/{car_filter.model}?bcol={car_filter.color}&fuel={car_filter.fuel_type}&version0={car_filter.version}fregfrom={car_filter.year_from}&fregto={car_filter.year_to}&kmfrom={km_from}&kmto={km_to}"
     return filter_url
 
 

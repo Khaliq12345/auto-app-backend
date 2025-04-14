@@ -125,6 +125,7 @@ def get_car_comparisons(
         response = (
             client.table("comparisons")
             .select("*")
+            .order("matching_percentage", desc=True)
             .eq("parent_car_id", car_id)
             .execute()
         )
@@ -292,7 +293,7 @@ async def upload_file(file: UploadFile):
 
 if __name__ == "__main__":
     client = get_session()
-    start_services(client, dev=True)
+    start_services(dev=True)
 
 
 # Try to set up the api on the server.

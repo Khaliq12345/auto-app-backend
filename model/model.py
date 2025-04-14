@@ -26,6 +26,8 @@ class Filter(BaseModel):
     color: str
     mileage: float
     fuel_type: str
+    year_from: int
+    year_to: int
 
 
 class Match(BaseModel):
