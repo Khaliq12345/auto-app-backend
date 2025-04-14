@@ -64,7 +64,8 @@ def save_to_db(data: dict | list[dict], table: str):
 
 def parse_and_save(car_dict: dict, cars: list[Car]):
     car_dict["updated_at"] = datetime.now().isoformat()
-    car_dict["fuel_type"] = fuel_types[car_dict["fuel_type"]]
+    if str(car_dict["fuel_type"]).isdigit():
+        car_dict["fuel_type"] = fuel_types[car_dict["fuel_type"]]
     jsoned_cars = jsonable_encoder(cars)
     compared_car_dicts = drop_duplicate_cars(jsoned_cars)
     if compared_car_dicts:
@@ -77,7 +78,7 @@ def runner(func):
         try:
             func(*args, **kwargs)
         except Exception as e:
-            log_path = "/logs/error_log.txt"
+            log_path = config.ERROR_FILE
             if not os.path.exists(log_path):
                 with open(log_path, "w") as f:
                     pass

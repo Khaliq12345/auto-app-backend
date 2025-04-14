@@ -10,8 +10,9 @@ from supabase import Client, AuthApiError, create_client
 from datetime import datetime
 import os
 import aiofiles
+from config import config
 
-OUT_FILE = "/uploads/25630.xlsx"
+OUT_FILE = config.UPLOAD_FILE
 session_deps = Depends()
 
 
@@ -23,13 +24,14 @@ def get_session() -> Client:
 
 
 @utils.runner
-def start_services(client: Client, dev: bool = True):
+def start_services(dev: bool = True):
     try:
         if dev:
             df = pd.read_excel(OUT_FILE, header=None).sample(10)
         else:
             df = pd.read_excel(OUT_FILE, header=None)
         for row_id in range(len(df)):
+            client = get_session()
             car_dict = utils.get_row_dict(df, row_id)
             print(f"Car Info - {car_dict}")
             thread1 = threading.Thread(target=autoscout24.main, args=(car_dict,))
@@ -217,7 +219,7 @@ def get_start_scraping(
         )
         response = client.table("Status").select("status").eq("id", 1).execute()
         if response.data[0]["status"] != "running":
-            background_task.add_task(start_services, client, dev)
+            background_task.add_task(start_services, dev)
             client.table("Status").update(
                 {
                     "id": 1,
