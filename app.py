@@ -14,6 +14,25 @@ from config import config
 
 OUT_FILE = config.UPLOAD_FILE
 session_deps = Depends()
+domains = [lacentrale.domain, autoscout24.domain]
+PERCENTAGE_LIMIT = 95
+
+
+def get_avg_price_based_on_domain(response):
+    best_prices = []
+    for domain in domains:
+        best_perc = 0
+        best_price = 0
+        for record in response.data:
+            if (
+                (record["domain"] == domain)
+                and (record["matching_percentage"] > best_perc)
+                and (record["matching_percentage"] >= PERCENTAGE_LIMIT)
+            ):
+                best_price = record["price"]
+        best_prices.append(best_price)
+
+    return sum(best_prices) / len(best_prices)
 
 
 def get_session() -> Client:
@@ -91,6 +110,8 @@ def get_all_cars(
     client: Annotated[Client, Depends(get_session)],
     page: int = 0,
     limit: int = 20,
+    cut_off_price: int = 500,
+    domain: str = None,
 ):
     try:
         auth = client.auth.set_session(
@@ -100,9 +121,32 @@ def get_all_cars(
         response = (
             client.table("Vehicles").select("*").limit(limit).offset(page).execute()
         )
+        cars = []
+        for record in response.data:
+            stmt = (
+                client.table("comparisons")
+                .select("*")
+                .eq("parent_car_id", record["id"])
+            )
+            if domain:
+                stmt = stmt.eq("domain", domain)
+            price_response = stmt.execute()
+            prices = [x["price"] for x in price_response.data]
+            prices = [0] if not prices else prices
+            record["lowest_price"] = min(prices)
+            record["average_price"] = sum(prices) / len(prices)
+            avg_price = get_avg_price_based_on_domain(price_response)
+            if record["price"] < avg_price:
+                record["card_color"] = "green"
+            elif (record["price"] - avg_price) >= cut_off_price:
+                record["card_color"] = "red"
+            else:
+                record["card_color"] = "yellow"
+            record["comparisons"] = price_response.data
+            cars.append(record)
         return {
             "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(response),
+            "details": jsonable_encoder(cars),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -139,48 +183,48 @@ def get_car_comparisons(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-@app.get("/get_best_deals")
-def get_best_deals(
-    access_token: str,
-    refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
-    domain: str,
-):
-    try:
-        auth = client.auth.set_session(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
-        response = (
-            client.table("comparisons")
-            .select("*, Vehicles(*)")
-            .gte("matching_percentage", 95)
-            .eq("domain", domain)
-            .execute()
-        )
-        models = []
-        results = []
-        for x in response.data:
-            if x["Vehicles"]["model"] not in models:
-                models.append(x["Vehicles"]["model"])
-                results.append(
-                    {
-                        "make": x["Vehicles"]["make"],
-                        "model": x["Vehicles"]["model"],
-                        "color": x["Vehicles"]["color"],
-                        "original_price": x["Vehicles"]["price"],
-                        "external_price": x["price"],
-                        "external link": x["link"],
-                    }
-                )
-        return {
-            "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(results),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    except AuthApiError:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+# @app.get("/get_all_cars_by_domain")
+# def get_best_deals(
+#     access_token: str,
+#     refresh_token: str,
+#     client: Annotated[Client, Depends(get_session)],
+#     domain: str,
+# ):
+#     try:
+#         auth = client.auth.set_session(
+#             access_token=access_token,
+#             refresh_token=refresh_token,
+#         )
+#         response = (
+#             client.table("comparisons")
+#             .select("*, Vehicles(*)")
+#             .gte("matching_percentage", 95)
+#             .eq("domain", domain)
+#             .execute()
+#         )
+#         models = []
+#         results = []
+#         for x in response.data:
+#             if x["Vehicles"]["model"] not in models:
+#                 models.append(x["Vehicles"]["model"])
+#                 results.append(
+#                     {
+#                         "make": x["Vehicles"]["make"],
+#                         "model": x["Vehicles"]["model"],
+#                         "color": x["Vehicles"]["color"],
+#                         "original_price": x["Vehicles"]["price"],
+#                         "external_price": x["price"],
+#                         "external link": x["link"],
+#                     }
+#                 )
+#         return {
+#             "session": jsonable_encoder(auth),
+#             "details": jsonable_encoder(results),
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+#     except AuthApiError:
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 @app.get("/scrape_status")

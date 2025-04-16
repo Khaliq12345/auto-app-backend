@@ -174,10 +174,10 @@ def get_filter_url(car_dict):
         ),
     )
     car_filter: Filter = response.parsed
-    km_from = abs(round(car_filter.mileage - 5000))
-    km_to = abs(round(car_filter.mileage + 5000))
+    km_from = abs(round(car_filter.mileage - 10000))
+    km_to = abs(round(car_filter.mileage + 10000))
     # &externalColors={car_filter.color}
-    filter_url = f"https://www.lacentrale.fr/listing?energies={car_filter.fuel_type}&makesModelsCommercialNames={car_filter.make}:{car_filter.model}&externalColors={car_filter.color}&versions={car_filter.version}&yearMax={car_filter.year_to}&yearMin={car_filter.year_from}&mileageMax={km_to}&mileageMin={km_from}"
+    filter_url = f"https://www.lacentrale.fr/listing?energies={car_filter.fuel_type}&makesModelsCommercialNames={car_filter.make}:{car_filter.model}&versions={car_filter.version if car_filter.version else ''}&yearMax={car_filter.year_to}&yearMin={car_filter.year_from}&mileageMax={km_to}&mileageMin={km_from}&customerFamilyCodes=PROFESSIONNEL"
     return filter_url
 
 
