@@ -31,8 +31,11 @@ def get_avg_price_based_on_domain(response):
             ):
                 best_price = record["price"]
         best_prices.append(best_price)
-
-    return sum(best_prices) / len(best_prices)
+    best_prices = [bp for bp in best_prices if bp]
+    if best_prices:
+        return sum(best_prices) / len(best_prices)
+    else:
+        return 0
 
 
 def get_session() -> Client:
@@ -138,7 +141,7 @@ def get_all_cars(
             avg_price = get_avg_price_based_on_domain(price_response)
             if record["price"] < avg_price:
                 record["card_color"] = "green"
-            elif (record["price"] - avg_price) >= cut_off_price:
+            elif abs(record["price"] - avg_price) >= cut_off_price:
                 record["card_color"] = "red"
             else:
                 record["card_color"] = "yellow"
@@ -181,50 +184,6 @@ def get_car_comparisons(
         raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-
-# @app.get("/get_all_cars_by_domain")
-# def get_best_deals(
-#     access_token: str,
-#     refresh_token: str,
-#     client: Annotated[Client, Depends(get_session)],
-#     domain: str,
-# ):
-#     try:
-#         auth = client.auth.set_session(
-#             access_token=access_token,
-#             refresh_token=refresh_token,
-#         )
-#         response = (
-#             client.table("comparisons")
-#             .select("*, Vehicles(*)")
-#             .gte("matching_percentage", 95)
-#             .eq("domain", domain)
-#             .execute()
-#         )
-#         models = []
-#         results = []
-#         for x in response.data:
-#             if x["Vehicles"]["model"] not in models:
-#                 models.append(x["Vehicles"]["model"])
-#                 results.append(
-#                     {
-#                         "make": x["Vehicles"]["make"],
-#                         "model": x["Vehicles"]["model"],
-#                         "color": x["Vehicles"]["color"],
-#                         "original_price": x["Vehicles"]["price"],
-#                         "external_price": x["price"],
-#                         "external link": x["link"],
-#                     }
-#                 )
-#         return {
-#             "session": jsonable_encoder(auth),
-#             "details": jsonable_encoder(results),
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-#     except AuthApiError:
-#         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 @app.get("/scrape_status")
