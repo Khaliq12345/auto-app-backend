@@ -6,3 +6,5 @@ error_log.txt
 .sentry-native
 .venv
 __pycache__
+uploads
+logs

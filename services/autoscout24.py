@@ -5,6 +5,7 @@ from browser import get_the_listing_html
 import json
 from selectolax.parser import HTMLParser
 import httpx
+from urllib.parse import urlencode, urlunparse, ParseResult
 
 domain = "https://www.autoscout24.fr/"
 
@@ -13,6 +14,7 @@ def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car]:
     cars = []
+    # if "" in soup.text
     for x in soup.css("main article")[:10]:
         price = x.attributes.get("data-price")
         mileage = x.attributes.get("data-mileage")
@@ -130,7 +132,37 @@ def get_prompt_from_make(input_dict: dict) -> str:
     return user_prompt(all_models, all_colors, fuel_types, input_dict)
 
 
+def get_options(car_dict: dict):
+    options = []
+    if car_dict.get("camera_360"):
+        options.append("187")
+    if car_dict.get("affichage_tete_haute"):
+        options.append("123")
+    if car_dict.get("aide_stationnement_avant"):
+        options.append("128")
+    if car_dict.get("limiteur_de_vitesse"):
+        options.append("227")
+    if car_dict.get("sieges_chauffants"):
+        options.append("34")
+    if car_dict.get("toit_ouvrant"):
+        options.append("4")
+    if car_dict.get("cuir"):
+        options.append("6")
+    if car_dict.get("toit_panoramique"):
+        options.append("50")
+    if car_dict.get("gps"):
+        options.append("23")
+    if car_dict.get("radar_de_recul"):
+        options.append("40")
+    if car_dict.get("bluetooth"):
+        options.append("122")
+    if car_dict.get("4x4"):
+        options.append("11")
+    return ",".join(options)
+
+
 def get_filter_url(car_dict):
+    # Using llm to get use the the make, model and version filter
     print("Generating Filter url based on row dict")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -142,12 +174,49 @@ def get_filter_url(car_dict):
         ),
     )
     car_filter: Filter = response.parsed
-    print(car_filter)
+
+    # Clean and calculate some of the filters
     car_filter.model = car_filter.model.replace(" ", "-").lower()
     km_from = abs(round(car_filter.mileage - 5000))
     km_to = abs(round(car_filter.mileage + 5000))
+    equipments = get_options(car_dict)
+
+    # build the filter url
+    params = {}
+    params["fuel"] = car_filter.fuel_type
+    if car_filter.version:
+        params["version0"] = car_filter.version
+    params["fregto"] = car_filter.year_to
+    params["fregfrom"] = car_filter.year_from
+    params["kmto"] = km_to
+    params["kmfrom"] = km_from
+    params["cy"] = "F"
+    params["custtype"] = "D"
+    if equipments:
+        params["eq"] = equipments
+    if car_dict.get("boite_de_vitesse"):
+        boite_de_vitesse = car_dict.get("boite_de_vitesse")
+        match boite_de_vitesse:
+            case 3:
+                params["gear"] = "A"
+            case 1:
+                params["gear"] = "M"
+            case 2:
+                params["gear"] = "S"
+
+    query_string = urlencode(params)
+    filter_url = urlunparse(
+        ParseResult(
+            scheme="https",
+            netloc="www.autoscout24.fr",
+            path=f"/lst/{car_filter.make.lower()}/{car_filter.model}",
+            params="",
+            query=query_string,
+            fragment="",
+        )
+    )
+
     # bcol={car_filter.color}
-    filter_url = f"https://www.autoscout24.fr/lst/{car_filter.make.lower()}/{car_filter.model}?fuel={car_filter.fuel_type}&version0={car_filter.version if car_filter.version else ''}&fregfrom={car_filter.year_from}&fregto={car_filter.year_to}&kmfrom={km_from}&kmto={km_to}&cy=F&custtype=D"
     return filter_url
 
 

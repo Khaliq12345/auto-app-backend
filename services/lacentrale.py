@@ -4,6 +4,7 @@ import httpx
 from utilities import utils
 from browser import get_the_listing_html
 from selectolax.parser import HTMLParser
+from urllib.parse import urlencode, urlunparse, ParseResult
 
 domain = "https://www.lacentrale.fr/"
 
@@ -162,7 +163,28 @@ def get_prompt_from_make(input_dict: dict) -> str:
     )
 
 
-def get_filter_url(car_dict):
+def get_options(car_dict: dict):
+    options = []
+    if car_dict.get("toit_ouvrant"):
+        options.append("TOIT_OUVRANT")
+    if car_dict.get("camera_de_recul"):
+        options.append("CAMERA_RECUL")
+    if car_dict.get("cuir"):
+        options.append("CUIR")
+    if car_dict.get("toit_panoramique"):
+        options.append("TOIT_PANORAMIQUE")
+    if car_dict.get("attelage"):
+        options.append("ATTELAGE")
+    if car_dict.get("gps"):
+        options.append("GPS")
+    if car_dict.get("radar_de_recul"):
+        options.append("RADAR_RECUL")
+    if car_dict.get("bluetooth"):
+        options.append("BLUETOOTH")
+    return ",".join(options)
+
+
+def get_filter_url(car_dict: dict):
     print("Generating Filter url based on row dict")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -176,8 +198,44 @@ def get_filter_url(car_dict):
     car_filter: Filter = response.parsed
     km_from = abs(round(car_filter.mileage - 10000))
     km_to = abs(round(car_filter.mileage + 10000))
-    # &externalColors={car_filter.color}
-    filter_url = f"https://www.lacentrale.fr/listing?energies={car_filter.fuel_type}&makesModelsCommercialNames={car_filter.make}:{car_filter.model}&versions={car_filter.version if car_filter.version else ''}&yearMax={car_filter.year_to}&yearMin={car_filter.year_from}&mileageMax={km_to}&mileageMin={km_from}&customerFamilyCodes=PROFESSIONNEL"
+    equipments = get_options(car_dict)
+
+    # build the filter url
+    params = {}
+    params["energies"] = car_filter.fuel_type
+    params["makesModelsCommercialNames"] = f"{car_filter.make}:{car_filter.model}"
+    if car_filter.version:
+        params["versions"] = car_filter.version
+    params["yearMax"] = car_filter.year_to
+    params["yearMin"] = car_filter.year_from
+    params["mileageMax"] = km_to
+    params["mileageMin"] = km_from
+    params["customerFamilyCodes"] = "PROFESSIONNEL"
+    if equipments:
+        params["options"] = equipments
+    if car_dict.get("4x4"):
+        params["categories"] = 47
+    if car_dict.get("boite_de_vitesse"):
+        boite_de_vitesse = car_dict.get("boite_de_vitesse")
+        match boite_de_vitesse:
+            case 3:
+                params["gearbox"] = "AUTO"
+            case 1:
+                params["gearbox"] = "MANUAL"
+
+    query_string = urlencode(params)
+    filter_url = urlunparse(
+        ParseResult(
+            scheme="https",
+            netloc="www.lacentrale.fr",
+            path="/listing",
+            params="",
+            query=query_string,
+            fragment="",
+        )
+    )
+
+    # filter_url = f"https://www.lacentrale.fr/listing?energies={car_filter.fuel_type}&makesModelsCommercialNames={car_filter.make}:{car_filter.model}&versions={car_filter.version if car_filter.version else ''}&yearMax={car_filter.year_to}&yearMin={car_filter.year_from}&mileageMax={km_to}&mileageMin={km_from}&customerFamilyCodes=PROFESSIONNEL&options={equipments}"
     return filter_url
 
 

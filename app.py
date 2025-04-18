@@ -52,6 +52,13 @@ def start_services(dev: bool = True):
             df = pd.read_excel(OUT_FILE, header=None).sample(10)
         else:
             df = pd.read_excel(OUT_FILE, header=None)
+
+        new_columns = []
+        for col in df.columns.to_list():
+            new_columns.append(utils.numeric_to_alphabetic_column_name(col))
+        df.columns = new_columns
+        df.fillna(value=0, inplace=True)
+
         for row_id in range(len(df)):
             client = get_session()
             car_dict = utils.get_row_dict(df, row_id)
@@ -134,14 +141,15 @@ def get_all_cars(
             if domain:
                 stmt = stmt.eq("domain", domain)
             price_response = stmt.execute()
-            prices = [x["price"] for x in price_response.data]
+            prices = [x["price_with_tax"] for x in price_response.data]
             prices = [0] if not prices else prices
             record["lowest_price"] = min(prices)
             record["average_price"] = sum(prices) / len(prices)
             avg_price = get_avg_price_based_on_domain(price_response)
-            if record["price"] < avg_price:
+            record["average_price_based_on_best_match"] = avg_price
+            if record["price_with_tax"] < avg_price:
                 record["card_color"] = "green"
-            elif abs(record["price"] - avg_price) >= cut_off_price:
+            elif abs(record["price_with_tax"] - avg_price) >= cut_off_price:
                 record["card_color"] = "red"
             else:
                 record["card_color"] = "yellow"
