@@ -141,7 +141,7 @@ def get_all_cars(
             if domain:
                 stmt = stmt.eq("domain", domain)
             price_response = stmt.execute()
-            prices = [x["price_with_tax"] for x in price_response.data]
+            prices = [x["price"] for x in price_response.data]
             prices = [0] if not prices else prices
             record["lowest_price"] = min(prices)
             record["average_price"] = sum(prices) / len(prices)
