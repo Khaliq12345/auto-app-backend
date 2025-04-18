@@ -14,7 +14,8 @@ def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car]:
     cars = []
-    # if "" in soup.text
+    if "0 Offres" in soup.css_first("h2").text(strip=True, separator=" "):
+        return []
     for x in soup.css("main article")[:10]:
         price = x.attributes.get("data-price")
         mileage = x.attributes.get("data-mileage")
