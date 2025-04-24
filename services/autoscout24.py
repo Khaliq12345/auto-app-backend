@@ -14,9 +14,7 @@ def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car]:
     cars = []
-    if "0 Offres" in soup.css_first("h2").text(strip=True, separator=" "):
-        return []
-    for x in soup.css("main article")[:10]:
+    for x in soup.css('main article[data-source="listpage_search-results"]')[:10]:
         price = x.attributes.get("data-price")
         mileage = x.attributes.get("data-mileage")
         deal_type = x.attributes.get("data-price-label")
@@ -159,42 +157,16 @@ def get_options(car_dict: dict):
         options.append("122")
     if car_dict.get("4x4"):
         options.append("11")
-    return ",".join(options)
+    # return ",".join(options)
+    return options
 
 
-def get_filter_url(car_dict):
-    # Using llm to get use the the make, model and version filter
-    print("Generating Filter url based on row dict")
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=get_prompt_from_make(car_dict),
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=Filter,
-            system_instruction="You are an Intelligent Html Parser Bot, that prioritze data intergrity.",
-        ),
-    )
-    car_filter: Filter = response.parsed
-
-    # Clean and calculate some of the filters
-    car_filter.model = car_filter.model.replace(" ", "-").lower()
-    km_from = abs(round(car_filter.mileage - 5000))
-    km_to = abs(round(car_filter.mileage + 5000))
-    equipments = get_options(car_dict)
-
-    # build the filter url
-    params = {}
-    params["fuel"] = car_filter.fuel_type
-    if car_filter.version:
-        params["version0"] = car_filter.version
+def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
+    # Construct the filter URL
     params["fregto"] = car_filter.year_to
     params["fregfrom"] = car_filter.year_from
-    params["kmto"] = km_to
-    params["kmfrom"] = km_from
-    params["cy"] = "F"
-    params["custtype"] = "D"
-    if equipments:
-        params["eq"] = equipments
+    params["fuel"] = car_filter.fuel_type
+
     if car_dict.get("boite_de_vitesse"):
         boite_de_vitesse = car_dict.get("boite_de_vitesse")
         match boite_de_vitesse:
@@ -221,10 +193,95 @@ def get_filter_url(car_dict):
     return filter_url
 
 
+def get_filter_urls(car_dict) -> list[str]:
+    # Using llm to get use the the make, model and version filter
+    print("Generating Filter url based on row dict")
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=get_prompt_from_make(car_dict),
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Filter,
+            system_instruction="You are an Intelligent Html Parser Bot, that prioritze data intergrity.",
+        ),
+    )
+    car_filter: Filter = response.parsed
+
+    filter_urls = []
+    # Clean and calculate some of the filters
+    car_filter.model = car_filter.model.replace(" ", "-").lower()
+    km_from = abs(round(car_filter.mileage - 5000))
+    km_to = abs(round(car_filter.mileage + 5000))
+    equipments = get_options(car_dict)
+
+    # build the filter url
+    params = {}
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+
+    params["cy"] = "F"
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+    params["kmto"] = km_to
+    params["kmfrom"] = km_from
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+    params["custtype"] = "D"
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+    if equipments:
+        for idx in range(len(equipments)):
+            params["eq"] = ",".join(equipments[0 : idx + 1])
+            filter_urls.append(
+                get_filter_url(
+                    params,
+                    car_dict,
+                    car_filter,
+                )
+            )
+
+    return filter_urls
+
+
 @utils.runner
 def main(car_dict: dict):
-    url = get_filter_url(car_dict)
-    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"], extract_10_cars)
+    filter_urls = get_filter_urls(car_dict)
+    filter_urls.reverse()
+    cars = []
+    for idx, filter_url in enumerate(filter_urls):
+        print(f"Filter url - {filter_url}")
+        # get the listing page
+        is_basic_filter = idx == len(filter_urls) - 1
+        cars = get_the_listing_html(
+            car_dict,
+            filter_url,
+            domain,
+            car_dict["id"],
+            extract_10_cars,
+            is_basic_filter=is_basic_filter,
+        )
+        if cars:
+            break
     utils.parse_and_save(car_dict, cars)
 
 

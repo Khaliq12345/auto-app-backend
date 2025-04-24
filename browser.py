@@ -60,7 +60,12 @@ def get_percentage_match(car1_details: dict, car2_details: dict):
 
 
 def get_the_listing_html(
-    car_dict: dict, filter_url: str, domain: str, parent_car_id: str, extract_10_cars
+    car_dict: dict,
+    filter_url: str,
+    domain: str,
+    parent_car_id: str,
+    extract_10_cars,
+    is_basic_filter: bool = False,
 ) -> list[Car]:
     print(f"Fetching the listing page - {filter_url}")
     json_data = {
@@ -84,6 +89,8 @@ def get_the_listing_html(
         soup, domain, parent_car_id, datetime.now().isoformat()
     )
     print(f"Found - {len(ten_cars)} cars")
+    if (len(ten_cars) < 10) and (not is_basic_filter):
+        return []
     for car in ten_cars:
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
         car.matching_percentage = get_percentage_match(

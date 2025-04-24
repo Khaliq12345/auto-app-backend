@@ -181,10 +181,37 @@ def get_options(car_dict: dict):
         options.append("RADAR_RECUL")
     if car_dict.get("bluetooth"):
         options.append("BLUETOOTH")
-    return ",".join(options)
+    return options
 
 
-def get_filter_url(car_dict: dict):
+def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
+    # build the filter url
+    params["makesModelsCommercialNames"] = f"{car_filter.make}:{car_filter.model}"
+    params["yearMax"] = car_filter.year_to
+    params["yearMin"] = car_filter.year_from
+    params["energies"] = car_filter.fuel_type
+    if car_dict.get("boite_de_vitesse"):
+        boite_de_vitesse = car_dict.get("boite_de_vitesse")
+        match boite_de_vitesse:
+            case 3:
+                params["gearbox"] = "AUTO"
+            case 1:
+                params["gearbox"] = "MANUAL"
+    query_string = urlencode(params)
+    filter_url = urlunparse(
+        ParseResult(
+            scheme="https",
+            netloc="www.lacentrale.fr",
+            path="/listing",
+            params="",
+            query=query_string,
+            fragment="",
+        )
+    )
+    return filter_url
+
+
+def get_filter_urls(car_dict: dict):
     print("Generating Filter url based on row dict")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -201,48 +228,73 @@ def get_filter_url(car_dict: dict):
     equipments = get_options(car_dict)
 
     # build the filter url
+    filter_urls = []
     params = {}
-    params["energies"] = car_filter.fuel_type
-    params["makesModelsCommercialNames"] = f"{car_filter.make}:{car_filter.model}"
-    if car_filter.version:
-        params["versions"] = car_filter.version
-    params["yearMax"] = car_filter.year_to
-    params["yearMin"] = car_filter.year_from
-    params["mileageMax"] = km_to
-    params["mileageMin"] = km_from
-    params["customerFamilyCodes"] = "PROFESSIONNEL"
-    if equipments:
-        params["options"] = equipments
-    if car_dict.get("4x4"):
-        params["categories"] = 47
-    if car_dict.get("boite_de_vitesse"):
-        boite_de_vitesse = car_dict.get("boite_de_vitesse")
-        match boite_de_vitesse:
-            case 3:
-                params["gearbox"] = "AUTO"
-            case 1:
-                params["gearbox"] = "MANUAL"
-
-    query_string = urlencode(params)
-    filter_url = urlunparse(
-        ParseResult(
-            scheme="https",
-            netloc="www.lacentrale.fr",
-            path="/listing",
-            params="",
-            query=query_string,
-            fragment="",
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
         )
     )
-
-    # filter_url = f"https://www.lacentrale.fr/listing?energies={car_filter.fuel_type}&makesModelsCommercialNames={car_filter.make}:{car_filter.model}&versions={car_filter.version if car_filter.version else ''}&yearMax={car_filter.year_to}&yearMin={car_filter.year_from}&mileageMax={km_to}&mileageMin={km_from}&customerFamilyCodes=PROFESSIONNEL&options={equipments}"
-    return filter_url
+    params["mileageMax"] = km_to
+    params["mileageMin"] = km_from
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+    params["customerFamilyCodes"] = "PROFESSIONNEL"
+    filter_urls.append(
+        get_filter_url(
+            params,
+            car_dict,
+            car_filter,
+        )
+    )
+    if car_dict.get("4x4"):
+        params["categories"] = 47
+        filter_urls.append(
+            get_filter_url(
+                params,
+                car_dict,
+                car_filter,
+            )
+        )
+    if equipments:
+        for idx in range(len(equipments)):
+            params["options"] = ",".join(equipments[0 : idx + 1])
+            filter_urls.append(
+                get_filter_url(
+                    params,
+                    car_dict,
+                    car_filter,
+                )
+            )
+    return filter_urls
 
 
 @utils.runner
 def main(car_dict: dict) -> list[Car]:
-    url = get_filter_url(car_dict)
-    cars = get_the_listing_html(car_dict, url, domain, car_dict["id"], extract_10_cars)
+    filter_urls = get_filter_urls(car_dict)
+    filter_urls.reverse()
+    cars = []
+    for idx, filter_url in enumerate(filter_urls):
+        print(f"Filter url - {filter_url}")
+        # get the listing page
+        is_basic_filter = idx == len(filter_urls) - 1
+        cars = get_the_listing_html(
+            car_dict,
+            filter_url,
+            domain,
+            car_dict["id"],
+            extract_10_cars,
+            is_basic_filter=is_basic_filter,
+        )
+        if cars:
+            break
     utils.parse_and_save(car_dict, cars)
 
 
