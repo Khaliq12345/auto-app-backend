@@ -18,12 +18,13 @@ domains = [lacentrale.domain, autoscout24.domain]
 PERCENTAGE_LIMIT = 95
 
 
-def get_avg_price_based_on_domain(response):
+def get_avg_price_based_on_domain(records: list[dict]):
+    # Get the average price based on the best matching percentage for each domain
     best_prices = []
     for domain in domains:
         best_perc = 0
         best_price = 0
-        for record in response.data:
+        for record in records:
             if (
                 (record["domain"] == domain)
                 and (record["matching_percentage"] > best_perc)
@@ -129,35 +130,33 @@ def get_all_cars(
             refresh_token=refresh_token,
         )
         response = (
-            client.table("Vehicles").select("*").limit(limit).offset(page).execute()
+            client.table("Vehicles")
+            .select("*, comparisons(*)")
+            .limit(limit)
+            .offset(page)
+            .order("matching_percentage", desc=True, foreign_table="comparisons")
+            .execute()
         )
-        cars = []
-        for record in response.data:
-            stmt = (
-                client.table("comparisons")
-                .select("*")
-                .eq("parent_car_id", record["id"])
-            )
-            if domain:
-                stmt = stmt.eq("domain", domain)
-            price_response = stmt.execute()
-            prices = [x["price"] for x in price_response.data]
-            prices = [0] if not prices else prices
-            record["lowest_price"] = min(prices)
-            record["average_price"] = sum(prices) / len(prices)
-            avg_price = get_avg_price_based_on_domain(price_response)
-            record["average_price_based_on_best_match"] = avg_price
-            if record["price_with_tax"] < avg_price:
-                record["card_color"] = "green"
-            elif abs(record["price_with_tax"] - avg_price) >= cut_off_price:
-                record["card_color"] = "red"
+        vehicles = []
+        for vehicle in response.data:
+            comparison_prices = [x["price"] for x in vehicle["comparisons"]]
+            comparison_prices = [0] if not comparison_prices else comparison_prices
+            vehicle["lowest_price"] = min(comparison_prices)
+            vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
+
+            avg_price = get_avg_price_based_on_domain(vehicle["comparisons"])
+            vehicle["average_price_based_on_best_match"] = avg_price
+            if vehicle["price_with_tax"] < avg_price:
+                vehicle["card_color"] = "green"
+            elif abs(vehicle["price_with_tax"] - avg_price) >= cut_off_price:
+                vehicle["card_color"] = "red"
             else:
-                record["card_color"] = "yellow"
-            record["comparisons"] = price_response.data
-            cars.append(record)
+                vehicle["card_color"] = "yellow"
+
+            vehicles.append(vehicle)
         return {
             "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(cars),
+            "details": jsonable_encoder(vehicles),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
