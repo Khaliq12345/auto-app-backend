@@ -15,23 +15,17 @@ from config import config
 OUT_FILE = config.UPLOAD_FILE
 session_deps = Depends()
 domains = [lacentrale.domain, autoscout24.domain]
-PERCENTAGE_LIMIT = 95
 
 
-def get_avg_price_based_on_domain(records: list[dict]):
+def get_avg_price_based_on_domain(records: list[dict], percentage_limit: int = 95):
     # Get the average price based on the best matching percentage for each domain
     best_prices = []
     for domain in domains:
-        best_perc = 0
-        best_price = 0
         for record in records:
-            if (
-                (record["domain"] == domain)
-                and (record["matching_percentage"] > best_perc)
-                and (record["matching_percentage"] >= PERCENTAGE_LIMIT)
+            if (record["domain"] == domain) and (
+                record["matching_percentage"] >= percentage_limit
             ):
-                best_price = record["price"]
-        best_prices.append(best_price)
+                best_prices.append(record["price"])
     best_prices = [bp for bp in best_prices if bp]
     if best_prices:
         return sum(best_prices) / len(best_prices)
@@ -123,20 +117,24 @@ def get_all_cars(
     limit: int = 20,
     cut_off_price: int = 500,
     domain: str = None,
+    percentage_limit: int = 95,
 ):
     try:
         auth = client.auth.set_session(
             access_token=access_token,
             refresh_token=refresh_token,
         )
-        response = (
+        stmt = (
             client.table("Vehicles")
             .select("*, comparisons(*)")
             .limit(limit)
             .offset(page)
             .order("matching_percentage", desc=True, foreign_table="comparisons")
-            .execute()
+            .lt("comparisons.matching_percentage", 100)
         )
+        if domain:
+            stmt = stmt.eq("comparisons.domain", domain)
+        response = stmt.execute()
         vehicles = []
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
@@ -144,7 +142,9 @@ def get_all_cars(
             vehicle["lowest_price"] = min(comparison_prices)
             vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
 
-            avg_price = get_avg_price_based_on_domain(vehicle["comparisons"])
+            avg_price = get_avg_price_based_on_domain(
+                vehicle["comparisons"], percentage_limit
+            )
             vehicle["average_price_based_on_best_match"] = avg_price
             if vehicle["price_with_tax"] < avg_price:
                 vehicle["card_color"] = "green"
