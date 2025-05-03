@@ -193,7 +193,7 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     return filter_url
 
 
-def get_filter_urls(car_dict) -> list[str]:
+def get_filter_urls(car_dict, mileage_plus_minus) -> list[str]:
     # Using llm to get use the the make, model and version filter
     print("Generating Filter url based on row dict")
     response = client.models.generate_content(
@@ -210,8 +210,8 @@ def get_filter_urls(car_dict) -> list[str]:
     filter_urls = []
     # Clean and calculate some of the filters
     car_filter.model = car_filter.model.replace(" ", "-").lower()
-    km_from = abs(round(car_filter.mileage - 5000))
-    km_to = abs(round(car_filter.mileage + 5000))
+    km_from = abs(round(car_filter.mileage - mileage_plus_minus))
+    km_to = abs(round(car_filter.mileage + mileage_plus_minus))
     equipments = get_options(car_dict)
 
     # build the filter url
@@ -264,8 +264,8 @@ def get_filter_urls(car_dict) -> list[str]:
 
 
 @utils.runner
-def main(car_dict: dict):
-    filter_urls = get_filter_urls(car_dict)
+def main(car_dict: dict, mileage_plus_minus: int):
+    filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
     for idx, filter_url in enumerate(filter_urls):

@@ -5,8 +5,9 @@ from model.model import Car, Match
 from config import config
 import hashlib
 from datetime import datetime
-import httpx
 import json
+from the_retry import retry
+import hrequests
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -59,6 +60,7 @@ def get_percentage_match(car1_details: dict, car2_details: dict):
     return percentage_percent.matching_percentage
 
 
+@retry(attempts=5, backoff=5, exponential_backoff=True)
 def get_the_listing_html(
     car_dict: dict,
     filter_url: str,
@@ -74,16 +76,20 @@ def get_the_listing_html(
         "device_type": "mobile",
         "headless": "html",
     }
-    response = httpx.post(
+    response = hrequests.post(
         "https://scraper-api.smartproxy.com/v2/scrape",
         headers=HEADERS,
         json=json_data,
         timeout=None,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise ValueError("Content is null")
     json_data = response.json()
     if json_data.get("results"):
         content = json_data.get("results")[0]["content"]
+
+    if not content:
+        raise ValueError("Content is null")
     soup = HTMLParser(content)
     ten_cars: list[Car] = extract_10_cars(
         soup, domain, parent_car_id, datetime.now().isoformat()

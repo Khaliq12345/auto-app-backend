@@ -211,7 +211,7 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     return filter_url
 
 
-def get_filter_urls(car_dict: dict):
+def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
     print("Generating Filter url based on row dict")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -223,8 +223,8 @@ def get_filter_urls(car_dict: dict):
         ),
     )
     car_filter: Filter = response.parsed
-    km_from = abs(round(car_filter.mileage - 10000))
-    km_to = abs(round(car_filter.mileage + 10000))
+    km_from = abs(round(car_filter.mileage - mileage_plus_minus))
+    km_to = abs(round(car_filter.mileage + mileage_plus_minus))
     equipments = get_options(car_dict)
 
     # build the filter url
@@ -277,8 +277,8 @@ def get_filter_urls(car_dict: dict):
 
 
 @utils.runner
-def main(car_dict: dict) -> list[Car]:
-    filter_urls = get_filter_urls(car_dict)
+def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
+    filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
     for idx, filter_url in enumerate(filter_urls):
@@ -293,6 +293,7 @@ def main(car_dict: dict) -> list[Car]:
             extract_10_cars,
             is_basic_filter=is_basic_filter,
         )
+        print(f"Total cars - {len(cars)}")
         if cars:
             break
     utils.parse_and_save(car_dict, cars)

@@ -1,7 +1,6 @@
 from services import autoscout24, lacentrale
 import pandas as pd
 from utilities import utils
-import threading
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +10,7 @@ from datetime import datetime
 import os
 import aiofiles
 from config import config
+from concurrent.futures import ThreadPoolExecutor
 
 OUT_FILE = config.UPLOAD_FILE
 session_deps = Depends()
@@ -41,7 +41,7 @@ def get_session() -> Client:
 
 
 @utils.runner
-def start_services(dev: bool = True):
+def start_services(mileage_plus_minus: int, dev: bool = True):
     try:
         if dev:
             df = pd.read_excel(OUT_FILE, header=None).sample(10)
@@ -53,17 +53,16 @@ def start_services(dev: bool = True):
             new_columns.append(utils.numeric_to_alphabetic_column_name(col))
         df.columns = new_columns
         df.fillna(value=0, inplace=True)
-
         for row_id in range(len(df)):
             client = get_session()
             car_dict = utils.get_row_dict(df, row_id)
             print(f"Car Info - {car_dict}")
-            thread1 = threading.Thread(target=autoscout24.main, args=(car_dict,))
-            thread2 = threading.Thread(target=lacentrale.main, args=(car_dict,))
-            thread1.start()
-            thread2.start()
-            thread1.join()
-            thread2.join()
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                # Submit the tasks to the thread pool
+                executor.submit(autoscout24.main, car_dict, mileage_plus_minus)
+                executor.submit(lacentrale.main, car_dict, mileage_plus_minus)
+
+            # verify status
             if (row_id + 1) == len(df):
                 stats = "success"
                 stopped_at = datetime.now().isoformat()
@@ -79,6 +78,7 @@ def start_services(dev: bool = True):
                     "total_running": len(df),
                 }
             ).eq("id", 1).execute()
+            break
     except BaseException as e:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
@@ -222,6 +222,7 @@ def get_start_scraping(
     background_task: BackgroundTasks,
     client: Annotated[Client, Depends(get_session)],
     dev: bool = True,
+    mileage_plus_minus: int = 10000,
 ):
     try:
         auth = client.auth.set_session(
@@ -230,7 +231,7 @@ def get_start_scraping(
         )
         response = client.table("Status").select("status").eq("id", 1).execute()
         if response.data[0]["status"] != "running":
-            background_task.add_task(start_services, dev)
+            background_task.add_task(start_services, mileage_plus_minus, dev)
             client.table("Status").update(
                 {
                     "id": 1,
@@ -303,7 +304,7 @@ async def upload_file(file: UploadFile):
 
 if __name__ == "__main__":
     client = get_session()
-    start_services(dev=True)
+    start_services(10000, dev=True)
 
 
 # Try to set up the api on the server.
