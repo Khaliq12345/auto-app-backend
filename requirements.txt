@@ -112,4 +112,4 @@ websockets==14.2
 yarl==1.18.3
 aiofiles
 dateparser
-hrequests
+hrequests[all]
