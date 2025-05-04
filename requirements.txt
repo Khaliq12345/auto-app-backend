@@ -113,3 +113,4 @@ yarl==1.18.3
 aiofiles
 dateparser
 hrequests[all]
+the-retry
