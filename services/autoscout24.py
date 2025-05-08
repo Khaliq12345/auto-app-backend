@@ -25,6 +25,11 @@ def extract_10_cars(
         image = x.css_first("img")
         image = image.attributes.get("src") if image else None
         link = x.css_first("a")
+        seller = x.css_first('span[data-testid="sellerinfo-company-name"]')
+        seller = seller.text() if seller else None
+        # print("seller", seller)
+        if "Auto Brass" in str(seller):
+            continue
         link = (
             f"https://www.autoscout24.fr{link.attributes.get('href')}" if link else link
         )
@@ -99,7 +104,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
         "device_type": "mobile",
     }
     response = httpx.post(
-        "https://scraper-api.smartproxy.com/v2/scrape",
+        "https://scraper-api.decodo.com/v2/scrape",
         headers=HEADERS,
         timeout=None,
         json=json_data,
@@ -268,6 +273,7 @@ def main(car_dict: dict, mileage_plus_minus: int):
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
+    print(filter_urls)
     for idx, filter_url in enumerate(filter_urls):
         print(f"Filter url - {filter_url}")
         # get the listing page

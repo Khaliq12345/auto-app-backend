@@ -78,7 +78,6 @@ def start_services(mileage_plus_minus: int, dev: bool = True):
                     "total_running": len(df),
                 }
             ).eq("id", 1).execute()
-            break
     except BaseException as e:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}

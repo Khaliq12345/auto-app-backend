@@ -66,6 +66,11 @@ def extract_10_cars(
         image = image.attributes.get("src") if image else None
         image = image.split("?")[0] if image else None
         link = x.css_first("a")
+        seller = x.css_first('span[class="vehiclecardV2_sellerContainer__DlVDY"]')
+        seller = seller.text() if seller else None
+        # print("seller", seller)
+        if "AUTO BRASS" in str(seller):
+            continue
         link = (
             f"https://www.lacentrale.fr{link.attributes.get('href')}" if link else link
         )

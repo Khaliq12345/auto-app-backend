@@ -77,7 +77,7 @@ def get_the_listing_html(
         "headless": "html",
     }
     response = hrequests.post(
-        "https://scraper-api.smartproxy.com/v2/scrape",
+        "https://scraper-api.decodo.com/v2/scrape",
         headers=HEADERS,
         json=json_data,
         timeout=None,
