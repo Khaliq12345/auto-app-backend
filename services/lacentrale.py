@@ -151,8 +151,8 @@ def get_prompt_from_make(input_dict: dict) -> str:
         # Get all the models based on the make
         models = response.json()["aggs"]["vehicle.makeModelCommercialName"][0]["agg"]
         for model in models:
-            for inner_model in model["agg"]:
-                all_models.append(inner_model["key"])
+            # for inner_model in model["agg"]:
+            all_models.append(model["key"])
         # get all colors available
         colors = response.json()["aggs"]["vehicle.externalColor"]
         for color in colors:

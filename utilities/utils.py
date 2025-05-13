@@ -158,6 +158,7 @@ def parse_and_save(car_dict: dict, cars: list[Car]):
     # send to supabase
     jsoned_cars = jsonable_encoder(cars)
     compared_car_dicts = drop_duplicate_cars(jsoned_cars)
+    print(f"Total cars; {len(compared_car_dicts)}")
     if compared_car_dicts:
         save_to_db(car_to_save_dict, "Vehicles")
         save_to_db(compared_car_dicts, "comparisons")

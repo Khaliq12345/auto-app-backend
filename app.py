@@ -302,7 +302,6 @@ async def upload_file(file: UploadFile):
 
 
 if __name__ == "__main__":
-    client = get_session()
     start_services(10000, dev=True)
 
 
