@@ -12,9 +12,14 @@ import aiofiles
 from config import config
 from concurrent.futures import ThreadPoolExecutor
 
+
 OUT_FILE = config.UPLOAD_FILE
 session_deps = Depends()
 domains = [lacentrale.domain, autoscout24.domain]
+domain_functions = {
+    "lacentrale": lacentrale.main,
+    "autoscout24": autoscout24.main,
+}
 
 
 def get_avg_price_based_on_domain(records: list[dict], percentage_limit: int = 95):
@@ -40,8 +45,21 @@ def get_session() -> Client:
     return client
 
 
+def check_if_id_supabase(row_id: str) -> bool:
+    client = get_session()
+    response = client.table("Vehicles").select("id").eq("id", row_id).execute()
+    if response.data:
+        return True
+    return False
+
+
 @utils.runner
-def start_services(mileage_plus_minus: int, dev: bool = True):
+def start_services(
+    mileage_plus_minus: int,
+    ignore_old: bool,
+    sites_to_scrape: list[str],
+    dev: bool = True,
+):
     try:
         if dev:
             df = pd.read_excel(OUT_FILE, header=None).sample(10)
@@ -54,13 +72,28 @@ def start_services(mileage_plus_minus: int, dev: bool = True):
         df.columns = new_columns
         df.fillna(value=0, inplace=True)
         for row_id in range(len(df)):
-            client = get_session()
             car_dict = utils.get_row_dict(df, row_id)
             print(f"Car Info - {car_dict}")
+
+            if (check_if_id_supabase(car_dict["id"]) is True) and (ignore_old is True):
+                print(f"Already scraped! -> {car_dict['id']}")
+                continue
+
+            # Verifying which to scrape from and submitting the tasks to the thread pool
             with ThreadPoolExecutor(max_workers=2) as executor:
-                # Submit the tasks to the thread pool
-                executor.submit(autoscout24.main, car_dict, mileage_plus_minus)
-                executor.submit(lacentrale.main, car_dict, mileage_plus_minus)
+                if not sites_to_scrape:
+                    for func in domain_functions:
+                        executor.submit(
+                            domain_functions[func], car_dict, mileage_plus_minus
+                        )
+                else:
+                    for site_to_scrape in sites_to_scrape:
+                        if site_to_scrape in domain_functions:
+                            executor.submit(
+                                domain_functions[site_to_scrape],
+                                car_dict,
+                                mileage_plus_minus,
+                            )
 
             # verify status
             if (row_id + 1) == len(df):
@@ -69,6 +102,8 @@ def start_services(mileage_plus_minus: int, dev: bool = True):
             else:
                 stopped_at = None
                 stats = "running"
+
+            client = get_session()
             client.table("Status").update(
                 {
                     "id": 1,
@@ -214,7 +249,7 @@ def get_status(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-@app.get("/start_scraping")
+@app.post("/start_scraping")
 def get_start_scraping(
     access_token: str,
     refresh_token: str,
@@ -222,6 +257,8 @@ def get_start_scraping(
     client: Annotated[Client, Depends(get_session)],
     dev: bool = True,
     mileage_plus_minus: int = 10000,
+    ignore_old: bool = True,
+    sites_to_scrape: list[str] = [],
 ):
     try:
         auth = client.auth.set_session(
@@ -230,7 +267,9 @@ def get_start_scraping(
         )
         response = client.table("Status").select("status").eq("id", 1).execute()
         if response.data[0]["status"] != "running":
-            background_task.add_task(start_services, mileage_plus_minus, dev)
+            background_task.add_task(
+                start_services, mileage_plus_minus, ignore_old, sites_to_scrape, dev
+            )
             client.table("Status").update(
                 {
                     "id": 1,
@@ -302,7 +341,7 @@ async def upload_file(file: UploadFile):
 
 
 if __name__ == "__main__":
-    start_services(10000, dev=True)
+    start_services(10000, dev=True, ignore_old=True, sites_to_scrape=["autoscout24"])
 
 
 # Try to set up the api on the server.
