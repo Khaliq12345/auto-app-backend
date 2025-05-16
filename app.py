@@ -341,7 +341,7 @@ async def upload_file(file: UploadFile):
 
 
 if __name__ == "__main__":
-    start_services(10000, dev=True, ignore_old=True, sites_to_scrape=["autoscout24"])
+    start_services(10000, dev=True, ignore_old=False, sites_to_scrape=["lacentrale"])
 
 
 # Try to set up the api on the server.

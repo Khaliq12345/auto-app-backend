@@ -30,18 +30,12 @@ def prompt(car1_details: dict, car2_details: dict) -> str:
     I will provide you with details of two cars, including their make, model, version (if available), and mileage. "
     "Your task is to compare these two cars and calculate a percentage match based on the following attributes: make, model, version, and mileage. "
     "Use your car knowledge to enhance the comparison, especially for the version attribute, 
-    by considering factors like generation, engine specifications, trim level, and additional features. "
-    "Assign weights to each attribute as follows: make (20%), model (20%), version (20%), and mileage (40%, given more weight due to its significance in condition assessment). "
-    "For each attribute: "
-    "- **Make**: Score 1.0 for an exact match, 0.0 otherwise. "
-    "- **Model**: Score 1.0 for an exact match, 0.0 otherwise. "
-    "- **Version**: Score between 0.0 and 1.0 based on similarity (e.g., generation, engine size, trim, features). Use your car expertise to estimate partial matches (e.g., same trim but different engines = partial score). "
-    "- **Mileage**: Calculate a score between 0.0 and 1.0 using the formula `1 - (difference / max_range)`, where `max_range` is 200,000 km (a typical lifespan for most cars), and cap the score at 0 if the difference exceeds the range. "
-    "Provide the final percentage match by summing the weighted scores (make_score * 0.20 + model_score * 0.20 + version_score * 0.20 + mileage_score * 0.40) and multiplying by 100. "
+    "Assign weights to each attribute as follows: make (20%), model (20%), version (20%), and mileage (40%). "
+    "Also provide a short explanation on why a particular percentage is assign to the car"
     "Here are the details for the two cars: "
     "- Car 1: {car1_details} "
     "- Car 2: {car2_details} "
-    "Return the percentage match as a float"
+    "Return the percentage match as a float, don't forget to inclue the reason as well."
     """
 
 
@@ -57,7 +51,10 @@ def get_percentage_match(car1_details: dict, car2_details: dict):
         ),
     )
     percentage_percent: Match = response.parsed
-    return percentage_percent.matching_percentage
+    return (
+        percentage_percent.matching_percentage,
+        percentage_percent.matching_percentage_reason,
+    )
 
 
 @retry(attempts=5, backoff=5, exponential_backoff=True)
@@ -69,7 +66,6 @@ def get_the_listing_html(
     extract_10_cars,
     is_basic_filter: bool = False,
 ) -> list[Car]:
-    print(f"Fetching the listing page - {filter_url}")
     json_data = {
         "url": filter_url,
         "geo": "France",
@@ -99,8 +95,8 @@ def get_the_listing_html(
         return []
     for car in ten_cars:
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage = get_percentage_match(
+        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
             json.dumps(car_dict), car.model_dump_json()
         )
-        print(car.matching_percentage)
+        print(car.matching_percentage, car.matching_percentage_reason)
     return ten_cars

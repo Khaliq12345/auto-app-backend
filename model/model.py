@@ -17,6 +17,7 @@ class Car(BaseModel):
     parent_car_id: Optional[int]
     updated_at: Optional[str]
     matching_percentage: Optional[float]
+    matching_percentage_reason: Optional[str]
 
 
 class Filter(BaseModel):
@@ -32,3 +33,4 @@ class Filter(BaseModel):
 
 class Match(BaseModel):
     matching_percentage: float
+    matching_percentage_reason: Optional[str]

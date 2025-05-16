@@ -49,6 +49,7 @@ def extract_10_cars(
                 parent_car_id=parent_car_id,
                 updated_at=updated_at,
                 matching_percentage=0.0,
+                matching_percentage_reason=None,
             )
         )
 
@@ -273,7 +274,6 @@ def main(car_dict: dict, mileage_plus_minus: int):
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
-    print(filter_urls)
     for idx, filter_url in enumerate(filter_urls):
         print(f"Filter url - {filter_url}")
         # get the listing page

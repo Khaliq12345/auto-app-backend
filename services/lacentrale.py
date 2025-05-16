@@ -90,6 +90,7 @@ def extract_10_cars(
                 parent_car_id=parent_car_id,
                 updated_at=updated_at,
                 matching_percentage=0.0,
+                matching_percentage_reason=None,
             )
         )
 
