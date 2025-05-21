@@ -11,9 +11,10 @@ import os
 import aiofiles
 from config import config
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 
-OUT_FILE = config.UPLOAD_FILE
+OUT_FILE = Path(config.UPLOAD_FILE)
 session_deps = Depends()
 domains = [lacentrale.domain, autoscout24.domain]
 domain_functions = {
@@ -60,11 +61,13 @@ def start_services(
     sites_to_scrape: list[str],
     dev: bool = True,
 ):
+    client = get_session()
     try:
         if dev:
             df = pd.read_excel(OUT_FILE, header=None).sample(10)
         else:
             df = pd.read_excel(OUT_FILE, header=None)
+            print(f'Total: {len(df)}')
 
         new_columns = []
         for col in df.columns.to_list():
@@ -103,7 +106,6 @@ def start_services(
                 stopped_at = None
                 stats = "running"
 
-            client = get_session()
             client.table("Status").update(
                 {
                     "id": 1,
@@ -113,7 +115,8 @@ def start_services(
                     "total_running": len(df),
                 }
             ).eq("id", 1).execute()
-    except BaseException as e:
+    except Exception as e:
+        print(f'Error: {e}')
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
         ).eq("id", 1).execute()
@@ -150,7 +153,7 @@ def get_all_cars(
     page: int = 0,
     limit: int = 20,
     cut_off_price: int = 500,
-    domain: str = None,
+    domain: str|None = None,
     percentage_limit: int = 95,
 ):
     try:
@@ -192,10 +195,10 @@ def get_all_cars(
             "session": jsonable_encoder(auth),
             "details": jsonable_encoder(vehicles),
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/get_car_comparisons")
@@ -221,11 +224,11 @@ def get_car_comparisons(
             "session": jsonable_encoder(auth),
             "details": jsonable_encoder(response),
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
     except AuthApiError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/scrape_status")
 def get_status(
@@ -243,10 +246,10 @@ def get_status(
             "session": jsonable_encoder(auth),
             "details": jsonable_encoder(response),
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/start_scraping")
@@ -287,16 +290,16 @@ def get_start_scraping(
                 "message": "Scraping already started",
                 "session": jsonable_encoder(auth),
             }
-    except Exception as e:
-        client.table("Status").update(
-            {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
-        ).eq("id", 1).execute()
-        raise HTTPException(status_code=500, detail=str(e))
     except AuthApiError:
         client.table("Status").update(
             {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
         ).eq("id", 1).execute()
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    except Exception as e:
+        client.table("Status").update(
+            {"id": 1, "status": "failed", "stopped_at": datetime.now().isoformat()}
+        ).eq("id", 1).execute()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/upload")

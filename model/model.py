@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class Car(BaseModel):
-    id: str
+    id: str|int
     name: Optional[str]
     price: Optional[float]
     deal_type: Optional[str]
@@ -14,7 +14,7 @@ class Car(BaseModel):
     domain: Optional[str]
     fuel_type: Optional[str]
     boite_de_vitesse: Optional[str]
-    parent_car_id: Optional[int]
+    parent_car_id: Optional[int|str]
     updated_at: Optional[str]
     matching_percentage: Optional[float]
     matching_percentage_reason: Optional[str]
