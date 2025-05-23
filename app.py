@@ -167,7 +167,6 @@ def get_all_cars(
             .limit(limit)
             .offset(page)
             .order("matching_percentage", desc=True, foreign_table="comparisons")
-            .lt("comparisons.matching_percentage", 100)
         )
         if domain:
             stmt = stmt.eq("comparisons.domain", domain)
@@ -190,7 +189,7 @@ def get_all_cars(
             else:
                 vehicle["card_color"] = "yellow"
 
-            vehicles.append(vehicle)
+            vehicles.append(vehicle)#2091556
         return {
             "session": jsonable_encoder(auth),
             "details": jsonable_encoder(vehicles),

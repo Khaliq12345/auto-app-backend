@@ -24,7 +24,7 @@ HEADERS = {
 }
 
 
-def prompt(car1_details: dict, car2_details: dict) -> str:
+def prompt(car1_details: str, car2_details: str) -> str:
     return f"""
     You are an expert in automotive comparisons. 
     I will provide you with details of two cars, including their make, model, version (if available), and mileage. "
@@ -39,7 +39,7 @@ def prompt(car1_details: dict, car2_details: dict) -> str:
     """
 
 
-def get_percentage_match(car1_details: dict, car2_details: dict):
+def get_percentage_match(car1_details: str, car2_details: str):
     print("Calculating the percentage match")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -50,11 +50,14 @@ def get_percentage_match(car1_details: dict, car2_details: dict):
             system_instruction="You are an expert in automotive comparisons.",
         ),
     )
-    percentage_percent: Match = response.parsed
-    return (
-        percentage_percent.matching_percentage,
-        percentage_percent.matching_percentage_reason,
-    )
+    percentage_percent = response.parsed
+    if isinstance(percentage_percent, Match):
+        return (
+            percentage_percent.matching_percentage,
+            percentage_percent.matching_percentage_reason,
+        )
+    else:
+        return 0, None
 
 
 @retry(attempts=5, backoff=5, exponential_backoff=True)
@@ -78,6 +81,7 @@ def get_the_listing_html(
         json=json_data,
         timeout=None,
     )
+    content = None
     if response.status_code != 200:
         raise ValueError("Content is null")
     json_data = response.json()
@@ -94,6 +98,8 @@ def get_the_listing_html(
     if (len(ten_cars) < 10) and (not is_basic_filter):
         return []
     for car in ten_cars:
+        if not car.link:
+            continue
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
         car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
             json.dumps(car_dict), car.model_dump_json()
