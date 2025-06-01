@@ -68,41 +68,48 @@ def get_the_listing_html(
     parent_car_id: str,
     extract_10_cars,
     is_basic_filter: bool = False,
+    skip_requests: bool = False,
+    ads: list[dict] = [],
 ) -> list[Car]:
-    json_data = {
-        "url": filter_url,
-        "geo": "France",
-        "device_type": "mobile",
-        "headless": "html",
-    }
-    response = hrequests.post(
-        "https://scraper-api.decodo.com/v2/scrape",
-        headers=HEADERS,
-        json=json_data,
-        timeout=None,
-    )
-    content = None
-    if response.status_code != 200:
-        raise ValueError("Content is null")
-    json_data = response.json()
-    if json_data.get("results"):
-        content = json_data.get("results")[0]["content"]
+    if skip_requests:
+        ten_cars: list[Car] = extract_10_cars(
+            ads, domain, parent_car_id, datetime.now().isoformat()
+        )
+    else:
+        json_data = {
+            "url": filter_url,
+            "geo": "France",
+            "device_type": "mobile",
+            "headless": "html",
+        }
+        response = hrequests.post(
+            "https://scraper-api.decodo.com/v2/scrape",
+            headers=HEADERS,
+            json=json_data,
+            timeout=None,
+        )
+        content = None
+        if response.status_code != 200:
+            raise ValueError("Content is null")
+        json_data = response.json()
+        if json_data.get("results"):
+            content = json_data.get("results")[0]["content"]
 
-    if not content:
-        raise ValueError("Content is null")
-    soup = HTMLParser(content)
-    ten_cars: list[Car] = extract_10_cars(
-        soup, domain, parent_car_id, datetime.now().isoformat()
-    )
-    print(f"Found - {len(ten_cars)} cars")
+        if not content:
+            raise ValueError("Content is null")
+        soup = HTMLParser(content)
+        ten_cars: list[Car] = extract_10_cars(
+            soup, domain, parent_car_id, datetime.now().isoformat()
+        )
+        print(f"Found - {len(ten_cars)} cars")
     if (len(ten_cars) < 10) and (not is_basic_filter):
         return []
     for car in ten_cars:
         if not car.link:
             continue
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
-            json.dumps(car_dict), car.model_dump_json()
+        car.matching_percentage, car.matching_percentage_reason = (
+            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
         )
         print(car.matching_percentage, car.matching_percentage_reason)
     return ten_cars
