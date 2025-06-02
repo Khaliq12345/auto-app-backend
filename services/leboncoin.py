@@ -4,7 +4,6 @@ from browser import client, types
 from model.model import Filter, Car
 from utilities import utils
 from browser import get_the_listing_html
-from selectolax.parser import HTMLParser
 
 domain = "https://www.leboncoin.fr/"
 
@@ -19,6 +18,7 @@ leboncoin_fuel_dict = {
     4: "7",  # GNV
 }
 
+
 cookies = {
     "FPID": "FPID2.2.fcEcGj6pHxZpLI%2BdDPLraSVSQejQxpJAPckhYlwp3m8%3D.1743343323",
     "__Secure-Install": "a7629a20-7b3e-40a6-8dfa-cbde4fa5b3c2",
@@ -26,18 +26,19 @@ cookies = {
     "_pcid": "%7B%22browserId%22%3A%22mbbyfvxfcf39jpmz%22%2C%22_t%22%3A%22mr0ddgtc%7Cmbbyfzhc%22%7D",
     "_pctx": "%7Bu%7DN4IgrgzgpgThIC4B2YA2qA05owMoBcBDfSREQpAeyRCwgEt8oBJAE0RXSwH18yBbGAAZWrAOb5WAH34AjWQE8AZgC8AFuwC%2BQA",
     "_ga": "GA1.1.1282342446.1748679197",
-    "FPLC": "7yVTdsxdY1I4QSyUzFPa%2FGsX0NL2n2BHZqBg%2Bx31sigeZax1CKt3HmHmobmwXcToKoDQ7Xt4YZ3Dh5aQswPhWKwp3USpimCWq2h%2Boe%2Be79tibTShuaSGIlHmXQ7qDg%3D%3D",
-    "ry_ry-l3b0nco_so_realytics": "eyJpZCI6InJ5XzVFOUYxNzQzLUU5RTgtNEE1NC1BNjlGLTE2NDlBMjREQ0QxMyIsImNpZCI6bnVsbCwib3JpZ2luIjp0cnVlLCJyZWYiOm51bGwsImNvbnQiOm51bGwsIm5zIjp0cnVlLCJzYyI6Im9rIiwic3AiOm51bGx9",
     "ry_ry-l3b0nco_realytics": "eyJpZCI6InJ5XzVFOUYxNzQzLUU5RTgtNEE1NC1BNjlGLTE2NDlBMjREQ0QxMyIsImNpZCI6bnVsbCwiZXhwIjoxNzgwMjE1MTk3ODM4LCJjcyI6MX0%3D",
     "FPAU": "1.2.1452550628.1748679201",
     "_gcl_au": "1.1.122445406.1748679205",
     "include_in_experiment": "true",
     "adview_clickmeter": "search__listing__1__e4efd2bb-ec65-4ca9-b724-09da3acb9116",
-    "utag_main": "v_id:01972566f4a10072bd9fc51902c804065001905d00fb8$_sn:1$_ss:0$_pn:8%3Bexp-session$_st:1748681400949$ses_id:1748679193761%3Bexp-session",
     "user_search_config": '{"owner_type":"pro"}',
-    "_ga_Z707449XJ2": "GS2.1.s1748679196$o1$g1$t1748680133$j60$l0$h324438904",
-    "datadome": "LNgHDT5ybG6u0Tqg6OPiFXpBmwSBRbUGmQ8YT6Omvt4kTq3CtvEskzXcED7qggzg0TvbA_uSvZ8xsXTvyA44zGOLGkkrXb0CGtQYq0sohcljm4TzHHNpfIFOJfolJY_T",
+    "FPLC": "lU0NtEkPY4laCiUbabQzdf1wBOqKZcwkQ6Xa8z7678SDnae%2B52qjexIXSu46H%2B3M0btF2GUlBWdQAfQfunZUA6jZEVr01tYI%2Fj5mK8MF2PcRHyqnKmDHRgPD1HFBzg%3D%3D",
+    "ry_ry-l3b0nco_so_realytics": "eyJpZCI6InJ5XzVFOUYxNzQzLUU5RTgtNEE1NC1BNjlGLTE2NDlBMjREQ0QxMyIsImNpZCI6bnVsbCwib3JpZ2luIjp0cnVlLCJyZWYiOm51bGwsImNvbnQiOm51bGwsIm5zIjp0cnVlLCJzYyI6Im9rIiwic3AiOm51bGx9",
+    "utag_main": "v_id:01972566f4a10072bd9fc51902c804065001905d00fb8$_sn:4$_ss:0$_st:1748854905841$_pn:6%3Bexp-session$ses_id:1748852941643%3Bexp-session",
+    "datadome": "zpg6PwJVg46cHUv3sDYP3LnqcvVvdzfKp8rXT0ttMZ9JT28462be6KhL3uZ60Kdv~2RaEeAXj2pJtyOavQtHGWHGIOe3861ToCXFv9kXIuZY8DBWg2hyJCo7z1o509mZ",
+    "_ga_Z707449XJ2": "GS2.1.s1748852942$o6$g1$t1748853113$j49$l0$h523743700",
 }
+
 
 headers = {
     "accept": "*/*",
