@@ -1,3 +1,4 @@
+from postgrest.types import CountMethod
 from services import autoscout24, lacentrale, leboncoin
 import pandas as pd
 from utilities import utils
@@ -201,7 +202,7 @@ def get_all_cars(
         )
         stmt = (
             client.table("Vehicles")
-            .select("*, comparisons(*)")
+            .select("*, comparisons(*)", count=CountMethod.exact)
             .limit(limit)
             .offset(page)
             .order(
@@ -243,6 +244,7 @@ def get_all_cars(
         return {
             "session": jsonable_encoder(auth),
             "details": jsonable_encoder(vehicles),
+            "total": response.count,
         }
     except AuthApiError:
         raise HTTPException(
