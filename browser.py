@@ -1,3 +1,4 @@
+from browserforge import headers
 from selectolax.parser import HTMLParser
 from google import genai
 from google.genai import types
@@ -8,6 +9,7 @@ from datetime import datetime
 import json
 from the_retry import retry
 import hrequests
+import httpx
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -21,6 +23,21 @@ HEADERS = {
     "accept": "application/json",
     "content-type": "application/json",
     "authorization": f"Basic {config.SMART_PROXY}",
+}
+
+LACENTALE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0",
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Content-Type": "application/json",
+    "Origin": "https://www.lacentrale.fr",
+    "Connection": "keep-alive",
+    "Referer": "https://www.lacentrale.fr/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "cross-site",
+    "Priority": "u=6",
+    "Cookie": "datadome=ciYGhJL4Xb2Y76J0qGPm59Z2UuGlV938ZNZIYAmUVHcf3_LJ7CKHOsWEMgbPqaeDLy6w2JzbCVkHg4xvnuyJCsiqQzuRnHlMPFfv7r9vxh57XI1wTZddgGbqn1tOssg~; Max-Age=31536000; Domain=.lacentrale.fr; Path=/; Secure; SameSite=Lax",
 }
 
 
@@ -76,28 +93,38 @@ def get_the_listing_html(
             ads, domain, parent_car_id, datetime.now().isoformat()
         )
     else:
-        json_data = {
-            "url": filter_url,
-            "geo": "France",
-            "device_type": "mobile",
-            "headless": "html",
-        }
-        response = hrequests.post(
-            "https://scraper-api.decodo.com/v2/scrape",
-            headers=HEADERS,
-            json=json_data,
-            timeout=None,
-        )
-        content = None
-        if response.status_code != 200:
-            raise ValueError("Content is null")
-        json_data = response.json()
-        if json_data.get("results"):
-            content = json_data.get("results")[0]["content"]
+        if domain == "https://www.lacentrale.fr/":
+            username = "sp4hm5m7z0"
+            password = "85K6wSkwq4Zo~Rjkie"
+            proxy = f"http://{username}:{password}@fr.decodo.com:40000"
+            response = httpx.get(
+                url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy
+            )
+            response.raise_for_status()
+            soup = HTMLParser(response.text)
+        else:
+            json_data = {
+                "url": filter_url,
+                "geo": "France",
+                "device_type": "mobile",
+                "headless": "html",
+            }
+            response = httpx.post(
+                "https://scraper-api.decodo.com/v2/scrape",
+                headers=HEADERS,
+                json=json_data,
+                timeout=None,
+            )
+            content = None
+            if response.status_code != 200:
+                raise ValueError("Content is null")
+            json_data = response.json()
+            if json_data.get("results"):
+                content = json_data.get("results")[0]["content"]
 
-        if not content:
-            raise ValueError("Content is null")
-        soup = HTMLParser(content)
+            if not content:
+                raise ValueError("Content is null")
+            soup = HTMLParser(content)
         ten_cars: list[Car] = extract_10_cars(
             soup, domain, parent_car_id, datetime.now().isoformat()
         )

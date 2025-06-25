@@ -432,9 +432,9 @@ async def upload_file(file: UploadFile):
 if __name__ == "__main__":
     start_services(
         10000,
-        dev=True,
+        dev=False,
         ignore_old=False,
-        sites_to_scrape=["leboncoin"],
+        sites_to_scrape=["lacentrale"],
     )
 
 
