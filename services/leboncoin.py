@@ -20,22 +20,22 @@ leboncoin_fuel_dict = {
 
 
 cookies = {
-    "FPID": "FPID2.2.fcEcGj6pHxZpLI%2BdDPLraSVSQejQxpJAPckhYlwp3m8%3D.1743343323",
-    "__Secure-Install": "a7629a20-7b3e-40a6-8dfa-cbde4fa5b3c2",
-    "deviceId": "ae44ef1e-73fd-45bf-977a-1d677289e73d",
-    "FPAU": "1.2.1452550628.1748679201",
-    "cnfdVisitorId": "936b967f-ce9f-4b07-99c8-f5fa47a4c747",
-    "_gcl_au": "1.1.1937787640.1750861704",
+    "__Secure-Install": "d020a272-76b5-456e-bea9-21d6e7b2abde",
+    "datadome": "ds5cE0M3jiEfoljuUR9XwNWz4VsZN3V3lIwtCg1KWruA4zUKWi1kIvz~rF_O4TLte3ahziYb9x89G5Ad1DCMJSV7HwOduGCqfndjYbAZcykqQNZRydb94GVOCnl3zupv",
+    "utag_main": "v_id:01976a98fa1900179947ee1b13020504e001901100bd0$_sn:1$_ss:1$_pn:1%3Bexp-session$_st:1749841907156$ses_id:1749840099865%3Bexp-session",
+    "_pcid": "%7B%22browserId%22%3A%22mbv5m5f7smp3e6k8%22%2C%22_t%22%3A%22mrjkjp7s%7Cmbv5m7vs%22%7D",
+    "_pctx": "%7Bu%7DN4IgrgzgpgThIC4B2YA2qA05owMoBcBDfSREQpAeyRCwgEt8oBJAE0RXSwH18yBbGACsA1kIAOAdnwAffgCMAbgFZ%2BkxXwC%2BQA",
+    "ry_ry-l3b0nco_realytics": "eyJpZCI6InJ5X0Q5NTc2MzcwLTQ4MjQtNDFERi1CNUQ1LThBMjk1N0E4OTdFNyIsImNpZCI6bnVsbCwiZXhwIjoxNzgxMzc2MTA0NzIzLCJjcyI6MX0%3D",
+    "_gcl_au": "1.1.1972335949.1749840105",
+    "_hjSessionUser_2783207": "eyJpZCI6Ijg4NTRlYTNiLTExM2QtNWE2My1iOWVhLThjMmMyOWU2MTA3ZSIsImNyZWF0ZWQiOjE3NDk4NDAxMDY4MzMsImV4aXN0aW5nIjp0cnVlfQ==",
+    "cto_bundle": "PYDDil91WERYZHg0WkJxJTJGWDZycWd3cFI4d0hLTklrSTZxSnA5aU1adHk0TTNXJTJCcmtJZUcxQlVyTkhYaEZ0MDZRQ0RTRlYyJTJCS04lMkZlaWh4RGd4RVZBMm8lMkJGRzFFTU9LY3l4bGZGVjlnNzhRNXFoUmZyU2huVFJuJTJCQnpDdjdUNmVtJTJCSFJVZkVublJHZ0VSUnd3QW5WM2Z2enVMdyUzRCUzRA",
+    "__gads": "ID=e04395da4c6c34cf:T=1749840109:RT=1751048900:S=ALNI_MZ1Bke1D53Ma1p3e625UX5m0s1F2w",
+    "__gpi": "UID=00001122b98ec34d:T=1749840109:RT=1751048900:S=ALNI_MYXgwtAiptaZM0h_Kc4tC6_S_WteQ",
+    "__eoi": "ID=0bcdf9387719bf08:T=1749840109:RT=1751048900:S=AA-AfjaStOefkNnIg5DZGwDANWe8",
+    "cnfdVisitorId": "0e30055a-d4e5-4b38-8d03-547661b118d8",
+    "_hjSession_2783207": "eyJpZCI6ImNlN2Y5NTg3LWYxMTgtNDQxYy05YzNjLWVhZjA4NWQ0ZDUyMiIsImMiOjE3NTEwNDg4OTA0ODYsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=",
     "lg": "13",
-    "_ga": "GA1.1.218914528.1750861705",
-    "_pcid": "%7B%22browserId%22%3A%22mcc1ulwcbcvggptf%22%2C%22_t%22%3A%22ms0gs7j1%7Cmcc1uq71%22%7D",
-    "_pctx": "%7Bu%7DN4IgrgzgpgThIC4B2YA2qA05owMoBcBDfSREQpAeyRCwgEt8oBJAE0RXSwH18yBbCAAYA5hADsAKwDMAH34BjBQEYwAR3HSQAXyA",
-    "ry_ry-l3b0nco_realytics": "eyJpZCI6InJ5X0FCRkY3MTRFLTE1MDItNDY1OS05MDFCLUVFQUVEMkZCQTBCQSIsImNpZCI6bnVsbCwiZXhwIjoxNzgyMzk3NzA0NTQ3LCJjcyI6MX0%3D",
-    "FPLC": "5RnyhW3GT7wKRkwylz%2BC5t2hz67pj3s2v%2Fmziy%2FJ523Dd5QvnMg25W38R4B34kEhwhyuTx%2FDbzPSUeW04czXbaLF1EAnq9HmYJ2wwHy2quJ1XCAyKcPd7ZLchG7HrA%3D%3D",
-    "ry_ry-l3b0nco_so_realytics": "eyJpZCI6InJ5X0FCRkY3MTRFLTE1MDItNDY1OS05MDFCLUVFQUVEMkZCQTBCQSIsImNpZCI6bnVsbCwib3JpZ2luIjp0cnVlLCJyZWYiOm51bGwsImNvbnQiOm51bGwsIm5zIjp0cnVlLCJzYyI6Im9rIiwic3AiOm51bGx9",
-    "utag_main": "v_id:0197a77d66b9008e931ab6adddd804065002d05d00ac2$_sn:2$_ss:0$_st:1750932065527$_pn:2%3Bexp-session$ses_id:1750930264519%3Bexp-session",
-    "_ga_Z707449XJ2": "GS2.1.s1750930265$o2$g1$t1750930266$j59$l0$h1930150089",
-    "datadome": "VXKjm6l71lA3kX3Yw7VLHud0jEK5OkLtVlNMcx~GhVSMihI5wcsDd5riACYvJBzXRmxGURw4GEf6jfbITAaQHIbhxTzFA4azWvrVmKZjvL2_qYAKTZmN4aIazx1NKrYL",
+    "__gsas": "ID=a7b8db720070020a:T=1751048893:RT=1751048893:S=ALNI_MbY82luIYeiD81sodNm597YPdzS9A",
 }
 
 headers = {

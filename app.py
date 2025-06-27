@@ -434,7 +434,7 @@ if __name__ == "__main__":
         10000,
         dev=False,
         ignore_old=False,
-        sites_to_scrape=["lacentrale"],
+        sites_to_scrape=["leboncoin"],
     )
 
 
