@@ -11,7 +11,7 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Annotated
+from typing import Annotated, Optional, Union
 from supabase import (
     Client,
     AuthApiError,
@@ -76,6 +76,7 @@ def start_services(
     ignore_old: bool,
     sites_to_scrape: list[str],
     dev: bool = True,
+    car_id: Optional[Union[str, int]] = None,
 ):
     client = get_session()
     try:
@@ -94,8 +95,10 @@ def start_services(
         df.fillna(value=0, inplace=True)
         for row_id in range(len(df)):
             car_dict = utils.get_row_dict(df, row_id)
-            print(f"Car Info - {car_dict}")
+            if (car_id) and (car_dict["id"] != car_id):
+                continue
 
+            print(f"Car Info - {car_dict}")
             if (check_if_id_supabase(car_dict["id"]) is True) and (
                 ignore_old is True
             ):
@@ -137,6 +140,7 @@ def start_services(
                     "total_running": len(df),
                 }
             ).eq("id", 1).execute()
+
     except Exception as e:
         print(f"Error: {e}")
         client.table("Status").update(
@@ -239,6 +243,19 @@ def get_all_cars(
                 vehicle["card_color"] = "red"
             else:
                 vehicle["card_color"] = "yellow"
+            best_match_cars = sorted(
+                vehicle["comparisons"],
+                key=lambda x: x["matching_percentage"],
+                reverse=True,
+            )
+            vehicle["best_match_percentage"] = 0
+            vehicle["best_match_link"] = None
+            if best_match_cars:
+                best_match_car = best_match_cars[0]
+                vehicle["best_match_percentage"] = best_match_car.get(
+                    "matching_percentage"
+                )
+                vehicle["best_match_link"] = best_match_car.get("link")
 
             vehicles.append(vehicle)  # 2091556
         return {
@@ -433,8 +450,9 @@ if __name__ == "__main__":
     start_services(
         10000,
         dev=False,
-        ignore_old=False,
+        ignore_old=True,
         sites_to_scrape=["leboncoin"],
+        car_id=None,
     )
 
 

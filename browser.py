@@ -97,9 +97,7 @@ def get_the_listing_html(
             username = "sp4hm5m7z0"
             password = "85K6wSkwq4Zo~Rjkie"
             proxy = f"http://{username}:{password}@fr.decodo.com:40000"
-            response = httpx.get(
-                url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy
-            )
+            response = httpx.get(url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy)
             response.raise_for_status()
             soup = HTMLParser(response.text)
         else:
@@ -115,6 +113,7 @@ def get_the_listing_html(
                 json=json_data,
                 timeout=None,
             )
+            print(response)
             content = None
             if response.status_code != 200:
                 raise ValueError("Content is null")
@@ -135,8 +134,8 @@ def get_the_listing_html(
         if not car.link:
             continue
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = (
-            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
+        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
+            json.dumps(car_dict), car.model_dump_json()
         )
         print(car.matching_percentage, car.matching_percentage_reason)
     return ten_cars

@@ -130,15 +130,19 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
 
 
 def save_to_db(data: dict | list[dict], table: str):
-    client: Client = create_client(
-        supabase_key=supabase_key,
-        supabase_url=url,
-    )
-    client.table(table).upsert(data).execute()
-    return True
+    try:
+        client: Client = create_client(
+            supabase_key=supabase_key,
+            supabase_url=url,
+        )
+        client.table(table).upsert(data).execute()
+        return True
+    except Exception as e:
+        print(f"Saving Error - {e}")
 
 
 def parse_and_save(car_dict: dict, cars: list[Car]):
+    print("Saving to database")
     car_dict["updated_at"] = datetime.now().isoformat()
     if str(car_dict["fuel_type"]).isdigit():
         car_dict["fuel_type"] = fuel_types[car_dict["fuel_type"]]
@@ -164,11 +168,12 @@ def parse_and_save(car_dict: dict, cars: list[Car]):
 
     # send to supabase
     jsoned_cars = jsonable_encoder(cars)
+    print("Encoding data")
     compared_car_dicts = drop_duplicate_cars(jsoned_cars)
-    print(f"Total cars; {len(compared_car_dicts)}")
+    print(f"Total cars to save {len(compared_car_dicts)}")
+    save_to_db(car_to_save_dict, "Vehicles")
     if compared_car_dicts:
         save_to_db(compared_car_dicts, "comparisons")
-    save_to_db(car_to_save_dict, "Vehicles")
 
 
 def runner(func):
