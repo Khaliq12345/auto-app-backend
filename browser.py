@@ -1,4 +1,3 @@
-from browserforge import headers
 from selectolax.parser import HTMLParser
 from google import genai
 from google.genai import types
@@ -8,7 +7,6 @@ import hashlib
 from datetime import datetime
 import json
 from the_retry import retry
-import hrequests
 import httpx
 
 client = genai.Client(api_key=config.GEMINI_API)
@@ -94,10 +92,10 @@ def get_the_listing_html(
         )
     else:
         if domain == "https://www.lacentrale.fr/":
-            username = "sp4hm5m7z0"
-            password = "85K6wSkwq4Zo~Rjkie"
-            proxy = f"http://{username}:{password}@fr.decodo.com:40000"
-            response = httpx.get(url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy)
+            proxy = f"http://{config.PROXY_USERNAME}:{config.PROXY_PASSWORD}@fr.decodo.com:40000"
+            response = httpx.get(
+                url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy
+            )
             response.raise_for_status()
             soup = HTMLParser(response.text)
         else:
@@ -134,8 +132,8 @@ def get_the_listing_html(
         if not car.link:
             continue
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
-            json.dumps(car_dict), car.model_dump_json()
+        car.matching_percentage, car.matching_percentage_reason = (
+            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
         )
         print(car.matching_percentage, car.matching_percentage_reason)
     return ten_cars
