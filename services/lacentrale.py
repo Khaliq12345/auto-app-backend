@@ -19,16 +19,22 @@ lacentrale_fuel_dict = {
 }
 
 headers = {
-    "sec-ch-ua-platform": '"Linux"',
-    "Referer": "https://www.lacentrale.fr/",
-    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
-    "sec-ch-ua-mobile": "?0",
-    "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
-    "X-Client-Source": "lc:recherche:front",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
     "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Connection": "keep-alive",
+    "Origin": "https://www.lacentrale.fr",
+    "Referer": "https://www.lacentrale.fr/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "X-Client-Source": "lc:recherche:front",
+    "sec-ch-ua": '"Chromium";v="139", "Not;A=Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Linux"',
+    "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
+    "x-datadome-clientid": "JNb4_NnyXOPwiOJwcbNxzYFyV5P6ogS9zCktTxOPqCYHxenbeztrym0r~4HQfIa_0Pf4JW47T8VtWdYD5NAQ3uDeTI0bkCW9TheskiGTX4~dGjNrNmYgxp9nKn_4XLjm",
 }
-
 params = {
     "aggregations": "EXTERNAL_COLOR,MAKE_MODEL_COMMERCIAL_NAME,VERSION",
     "families": "AUTO,UTILITY",
@@ -144,6 +150,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
         params=params,
         headers=headers,
     )
+    print(f"Filter - {response.status_code}")
     json_data = response.json()
     all_models = []
     all_colors = []
@@ -302,7 +309,7 @@ def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
         print(f"Total cars - {len(cars)}")
         if cars:
             break
-    utils.parse_and_save(car_dict, cars)
+    utils.parse_and_save(car_dict, cars, "lacentrale")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 from the_retry import retry
 import httpx
+import hrequests
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -24,18 +25,24 @@ HEADERS = {
 }
 
 LACENTALE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0",
-    "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Content-Type": "application/json",
-    "Origin": "https://www.lacentrale.fr",
-    "Connection": "keep-alive",
-    "Referer": "https://www.lacentrale.fr/",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "cross-site",
-    "Priority": "u=6",
-    "Cookie": "datadome=ciYGhJL4Xb2Y76J0qGPm59Z2UuGlV938ZNZIYAmUVHcf3_LJ7CKHOsWEMgbPqaeDLy6w2JzbCVkHg4xvnuyJCsiqQzuRnHlMPFfv7r9vxh57XI1wTZddgGbqn1tOssg~; Max-Age=31536000; Domain=.lacentrale.fr; Path=/; Secure; SameSite=Lax",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-language": "en-US,en;q=0.9",
+    "priority": "u=0, i",
+    "referer": "https://www.lacentrale.fr/",
+    "sec-ch-device-memory": "8",
+    "sec-ch-ua": '"Chromium";v="139", "Not;A=Brand";v="99"',
+    "sec-ch-ua-arch": '"x86"',
+    "sec-ch-ua-full-version-list": '"Chromium";v="139.0.7258.138", "Not;A=Brand";v="99.0.0.0"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-model": '""',
+    "sec-ch-ua-platform": '"Linux"',
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "cookie": 'access-token=eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTY3MzA0NDcsInZlcnNpb24iOiIyMDE4LTA3LTE2IiwidXNlckNvcnJlbGF0aW9uSWQiOm51bGwsInVzZXJfY29ycmVsYXRpb25faWQiOm51bGwsImxvZ2dlZFVzZXIiOnsiY29ycmVsYXRpb25JZCI6bnVsbCwicmVmcmVzaFRva2VuVFRMIjoxNzYwNjE0ODQ3fSwibW9kZU1hc3F1ZXJhZGUiOmZhbHNlLCJhdXRob3JpemF0aW9ucyI6eyJ2ZXJzaW9uIjoiMjAxOC0wNy0xNiIsInN0YXRlbWVudHMiOlt7InNpZCI6IioiLCJlZmZlY3QiOiJEZW55IiwiYWN0aW9ucyI6WyIqIl0sInJlc291cmNlcyI6WyIqIl19XX0sImlhdCI6MTc1NjcyNjg0N30.tgh8rPxQ87nI5lrd6U3fqE3delXh_cgIP2Ptzp3yGpZKDsCeufdzOC1joi9p-IT6y6x8TfHrfo-VRo0136ISqiddb3bZqywwUX5W-jczi5XaHInl1WJriG__Cvqc0aHs_tautqmL6qKN2h6YLW-XxpKbFpHLLPMmLu4i3RWPFs5d_YAfbwULWwjeb9FXwUK_RZH-xOAORpnndnhxUc4FPFAE8XIRGOQjL_U_ozoEDghNShrxKfBHCDuq5VHR9PPEAfhQ1NPTstvdAIfrsqp3GkmwZQnse3lvjLiWDabu7yLiJQ6TH27QWulE8YggkfB3sEzUS4sCoPQgOGW64yrQzg; visitor_id=055bb825-9631-4dc4-bfae-4b089e027697; kameleoonVisitorCode=7s92rohe90g; kameleoonTrackings=%5B%7B%22Experiments.assignVariation%22%3A%22289282%2C1068407%22%2C%22Experiments.trigger%22%3A%22289282%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22298892%2C1150713%22%2C%22Experiments.trigger%22%3A%22298892%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22302730%2C1099455%22%2C%22Experiments.trigger%22%3A%22302730%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22304495%2C1103475%22%2C%22Experiments.trigger%22%3A%22304495%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313627%2C1127045%22%2C%22Experiments.trigger%22%3A%22313627%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313978%2C1126421%22%2C%22Experiments.trigger%22%3A%22313978%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22315702%2C1130328%22%2C%22Experiments.trigger%22%3A%22315702%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22323253%2C1147037%22%2C%22Experiments.trigger%22%3A%22323253%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22327940%2C1157938%22%2C%22Experiments.trigger%22%3A%22327940%2Ctrue%22%7D%5D; kameleoonFeatureFlags=%5B%22atc-ranking-new%22%2C%22composer-classified-composer%22%2C%22copy_af64u95oqng_copy_jr16u2dmikg__dev__cas__logged_cote-seeprice%22%2C%22copy_h6f1fpu0cbg_copy_dsg7dt33qvo__dev__cas__ab_highlight_area-highlight_lre%22%2C%22lacentrale-chat-2-0-13%22%2C%22new-financing-design-activated%22%2C%22one-click-call-activated%22%2C%22one-click-call-wording-activated%22%2C%22publicity-default%22%2C%22strengths-revamp-on%22%5D; atidvisitor251312=%7B%22name%22%3A%22atidvisitor251312%22%2C%22val%22%3A%7B%22vrn%22%3A%22-251312-%22%7D%2C%22options%22%3A%7B%22path%22%3A%22%2F%22%2C%22session%22%3A15724800%2C%22end%22%3A15724800%7D%7D; _pcid=%7B%22browserId%22%3A%22mf11t6dl3bbt7pd5%22%2C%22_t%22%3A%22mupgqnpz%7Cmf11t6dz%22%7D; _cs_mk_pa=0.9120987193281638_1756726852248; tc_sampling=10; tCdebugLib=1; _pctx=%7Bu%7DN4IgrgzgpgThIC4B2YA2qA05owMoBcBDfSREQpAeyRCwgEt8oBJAE0RXSwH18yBbMAAcA5gEckMAB4AffgDMAjIvwA2eVJABfIA; lc_pageSize=16; persist:lc:client=%7B%22_persist%22%3A%22%7B%5C%22version%5C%22%3A-1%2C%5C%22rehydrated%5C%22%3Atrue%7D%22%7D; reduxPersistIndex=%5B%22persist%3Alc%3Aclient%22%5D; ab.storage.deviceId.c96d7fed-e0d2-4550-8d72-1036262ded5a=g%3Af8079dc5-e20b-7152-a34b-27729e51c5be%7Ce%3Aundefined%7Cc%3A1756726852887%7Cl%3A1756726852887; ab.storage.sessionId.c96d7fed-e0d2-4550-8d72-1036262ded5a=g%3A3d9f8cdb-1183-1c65-a9a5-9b0bb31eb216%7Ce%3A1756728652891%7Cc%3A1756726852885%7Cl%3A1756726852891; didomi_cookies=essential,analytics,marketing,social; _pprv=eyJjb25zZW50Ijp7IjAiOnsibW9kZSI6Im9wdC1pbiJ9LCI3Ijp7Im1vZGUiOiJvcHQtaW4ifX0sInB1cnBvc2VzIjp7IjAiOiJBTSIsIjciOiJETCJ9LCJfdCI6Im11cGdxbnBwfG1mMTF0NmRwIn0%3D; gdprValid=1; atPrivacy=optin; atuserid=%7B%22name%22%3A%22atuserid%22%2C%22val%22%3A%22mf11t6dl3bbt7pd5%22%2C%22options%22%3A%7B%22end%22%3A%222026-03-02T11%3A40%3A53.021Z%22%2C%22path%22%3A%22%2F%22%7D%7D; atauthority=%7B%22name%22%3A%22atauthority%22%2C%22val%22%3A%7B%22authority_name%22%3A%22default%22%2C%22visitor_mode%22%3A%22optin%22%7D%2C%22options%22%3A%7B%22end%22%3A%222026-10-03T11%3A40%3A53.021Z%22%2C%22path%22%3A%22%2F%22%7D%7D; tc_pianoConsent=1; _cs_ex=1743683889; _cs_c=0; _lm_id=2DX302QV324BDIGS; _uetsid=86982100872811f0b7c473cecba29549; _uetvid=86985c50872811f0979b3b18d84ec025; __rtbh.uid=%7B%22eventType%22%3A%22uid%22%2C%22id%22%3A%22055bb825-9631-4dc4-bfae-4b089e027697%22%2C%22expiryDate%22%3A%222026-09-01T11%3A40%3A59.073Z%22%7D; __rtbh.lid=%7B%22eventType%22%3A%22lid%22%2C%22id%22%3A%222c9tD3Cw0qxN3GO46mLN%22%2C%22expiryDate%22%3A%222026-09-01T11%3A40%3A59.073Z%22%7D; ry_ry-9mpyr1d3_realytics=eyJpZCI6InJ5XzBGMjQ0MTI3LTQ0MjctNDUyQS04MkYxLUI1NTc2NjhENzhDQSIsImNpZCI6bnVsbCwiZXhwIjoxNzg4MjYyODU5Mjk0LCJjcyI6bnVsbH0%3D; ry_ry-9mpyr1d3_so_realytics=eyJpZCI6InJ5XzBGMjQ0MTI3LTQ0MjctNDUyQS04MkYxLUI1NTc2NjhENzhDQSIsImNpZCI6bnVsbCwib3JpZ2luIjp0cnVlLCJyZWYiOm51bGwsImNvbnQiOm51bGwsIm5zIjpmYWxzZSwic2MiOm51bGwsInNwIjpudWxsfQ%3D%3D; _gcl_au=1.1.1300786257.1756726860; _fbp=fb.1.1756726861677.87585764724909690; datadome=J3VAqK1KDUC5ypmhI2tctYWvwiYzm1O6RcNNsWtML5GDwFvPdwUWQ6LoVCPVRyR1ButrvnO~yJPqaoO8yKWsHmSpSPw7mCijDGxZjC03CmznabhR8N8PhOcUVBPg_y~f; _hjSessionUser_1339841=eyJpZCI6IjFkYTA3MzNmLTk1OGEtNTIxYy05MTU5LTVmNWViNTk2YWZmYyIsImNyZWF0ZWQiOjE3NTY3MjY4NjM5MTYsImV4aXN0aW5nIjpmYWxzZX0=; _hjSession_1339841=eyJpZCI6IjM2OWRhOWM0LTdmZTktNGZlYy1hZDExLWU0MTA5NGNkMGI1MCIsImMiOjE3NTY3MjY4NjM5MTcsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjoxLCJzcCI6MX0=; _lr_geo_location_state=QC; _lr_geo_location=CA; _clck=1wm52rj%5E2%5Efyy%5E0%5E2070; _clsk=kkd2cc%5E1756726871471%5E1%5E0%5Ek.clarity.ms%2Fcollect; lc_seed=20250901114; lc_delta_event_referrer={"event_page":"home", "event_page_zone":"moteurHome"}',
 }
 
 
@@ -93,9 +100,7 @@ def get_the_listing_html(
     else:
         if domain == "https://www.lacentrale.fr/":
             proxy = f"http://{config.PROXY_USERNAME}:{config.PROXY_PASSWORD}@fr.decodo.com:40000"
-            response = httpx.get(
-                url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy
-            )
+            response = httpx.get(url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy)
             response.raise_for_status()
             soup = HTMLParser(response.text)
         else:
@@ -132,8 +137,8 @@ def get_the_listing_html(
         if not car.link:
             continue
         car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = (
-            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
+        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
+            json.dumps(car_dict), car.model_dump_json()
         )
         print(car.matching_percentage, car.matching_percentage_reason)
     return ten_cars

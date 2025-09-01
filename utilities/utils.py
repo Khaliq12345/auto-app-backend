@@ -141,7 +141,7 @@ def save_to_db(data: dict | list[dict], table: str):
         print(f"Saving Error - {e}")
 
 
-def parse_and_save(car_dict: dict, cars: list[Car]):
+def parse_and_save(car_dict: dict, cars: list[Car], site: str):
     print("Saving to database")
     car_dict["updated_at"] = datetime.now().isoformat()
     if str(car_dict["fuel_type"]).isdigit():
@@ -165,6 +165,10 @@ def parse_and_save(car_dict: dict, cars: list[Car]):
     ]
     for field in fields:
         car_to_save_dict[field] = car_dict[field]
+    if site == "leboncoin":
+        car_to_save_dict["leboncoin"] = True
+    elif site == "lacentrale":
+        car_to_save_dict["lacentrale"] = True
 
     # send to supabase
     jsoned_cars = jsonable_encoder(cars)

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from postgrest.types import CountMethod
 from services import autoscout24, lacentrale, leboncoin
 import pandas as pd
@@ -62,12 +63,22 @@ def get_session() -> Client:
     return client
 
 
-def check_if_id_supabase(row_id: str) -> bool:
+def check_if_id_supabase(
+    row_id: str, ignore_old: bool, site_to_scrape: list[str]
+) -> list[str]:
+    site_to_scrape = deepcopy(site_to_scrape)
+    if not ignore_old:
+        return site_to_scrape
     client = get_session()
     response = client.table("Vehicles").select("id").eq("id", row_id).execute()
-    if response.data:
-        return True
-    return False
+    if not response.data:
+        return site_to_scrape
+    record = response.data[0]
+    if record.get("leboncoin"):
+        site_to_scrape.remove("leboncoin")
+    if record.get("lacentrale"):
+        site_to_scrape.remove("lacentrale")
+    return site_to_scrape
 
 
 @utils.runner
@@ -88,9 +99,7 @@ def start_services(
 
         new_columns = []
         for col in df.columns.to_list():
-            new_columns.append(
-                utils.numeric_to_alphabetic_column_name(int(col))
-            )
+            new_columns.append(utils.numeric_to_alphabetic_column_name(int(col)))
         df.columns = new_columns
         df.fillna(value=0, inplace=True)
         for row_id in range(len(df)):
@@ -99,11 +108,10 @@ def start_services(
                 continue
 
             print(f"Car Info - {car_dict}")
-            if (check_if_id_supabase(car_dict["id"]) is True) and (
-                ignore_old is True
-            ):
-                print(f"Already scraped! -> {car_dict['id']}")
-                continue
+            updated_sites_to_scrape = check_if_id_supabase(
+                car_dict["id"], ignore_old=True, site_to_scrape=sites_to_scrape
+            )
+            print(f"ID is not scraped by - {updated_sites_to_scrape}")
 
             # Verifying which to scrape from and submitting the tasks to the thread pool
             with ThreadPoolExecutor(max_workers=2) as executor:
@@ -115,7 +123,7 @@ def start_services(
                             mileage_plus_minus,
                         )
                 else:
-                    for site_to_scrape in sites_to_scrape:
+                    for site_to_scrape in updated_sites_to_scrape:
                         if site_to_scrape in domain_functions:
                             executor.submit(
                                 domain_functions[site_to_scrape],
@@ -221,13 +229,9 @@ def get_all_cars(
         vehicles = []
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
-            comparison_prices = (
-                [0] if not comparison_prices else comparison_prices
-            )
+            comparison_prices = [0] if not comparison_prices else comparison_prices
             vehicle["lowest_price"] = min(comparison_prices)
-            vehicle["average_price"] = sum(comparison_prices) / len(
-                comparison_prices
-            )
+            vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
             avg_price = get_avg_price_based_on_domain(
                 vehicle["comparisons"],
                 percentage_limit,
@@ -449,7 +453,7 @@ async def upload_file(file: UploadFile):
 if __name__ == "__main__":
     start_services(
         10000,
-        dev=False,
+        dev=True,
         ignore_old=True,
         sites_to_scrape=["leboncoin"],
         car_id=None,
