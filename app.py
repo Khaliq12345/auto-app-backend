@@ -82,9 +82,11 @@ def check_if_id_supabase(
     print(f"Record - {record}")
     print(f"Initial site to scrape - {site_to_scrape}")
     if record.get("leboncoin"):
-        site_to_scrape.remove("leboncoin")
+        if "leboncoin" in site_to_scrape:
+            site_to_scrape.remove("leboncoin")
     if record.get("lacentrale"):
-        site_to_scrape.remove("lacentrale")
+        if "lacentrale" in site_to_scrape:
+            site_to_scrape.remove("lacentrale")
 
     print(f"final site to scrape - {site_to_scrape}")
     return site_to_scrape
