@@ -1,3 +1,5 @@
+from camoufox.sync_api import Camoufox
+from time import sleep
 from browser import client, types
 from model.model import Filter, Car
 import httpx
@@ -290,25 +292,38 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
 
 
 @utils.runner
-def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
+def main(car_dict: dict, mileage_plus_minus) -> list[Car] | None:
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
-    for idx, filter_url in enumerate(filter_urls):
-        print(f"Filter url - {filter_url}")
-        # get the listing page
-        is_basic_filter = idx == len(filter_urls) - 1
-        cars = get_the_listing_html(
-            car_dict,
-            filter_url,
-            domain,
-            car_dict["id"],
-            extract_10_cars,
-            is_basic_filter=is_basic_filter,
-        )
-        print(f"Total cars - {len(cars)}")
-        if cars:
-            break
+    cars_selector = 'div[class="listingContainer"]'
+    page = None
+    with Camoufox(headless=False) as browser:
+        if not page:
+            page = browser.new_page()
+        for idx, filter_url in enumerate(filter_urls):
+            page.goto(filter_url, timeout=120000)
+            page.wait_for_selector(cars_selector, timeout=120000)
+            soup = HTMLParser(page.content())
+            print(f"Filter url - {filter_url}")
+            # get the listing page
+            is_basic_filter = idx == len(filter_urls) - 1
+            cars = get_the_listing_html(
+                car_dict,
+                filter_url,
+                domain,
+                car_dict["id"],
+                extract_10_cars,
+                is_basic_filter=is_basic_filter,
+                soup=soup,
+            )
+            print(f"Total cars - {len(cars)}")
+            if cars:
+                break
+            sleep_secs = 5
+            print(f"Sleeping for {sleep_secs} seconds")
+            sleep(sleep_secs)
+
     utils.parse_and_save(car_dict, cars, "lacentrale")
 
 
