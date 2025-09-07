@@ -103,7 +103,7 @@ def start_services(
     client = get_session()
     try:
         if dev:
-            df = pd.read_excel(OUT_FILE, header=None).sample(10)
+            df = pd.read_excel(OUT_FILE, header=None).sample(1000)
         else:
             df = pd.read_excel(OUT_FILE, header=None)
             print(f"Total: {len(df)}")
@@ -473,9 +473,9 @@ async def upload_file(file: UploadFile):
 if __name__ == "__main__":
     start_services(
         10000,
-        dev=False,
+        dev=True,
         ignore_old=True,
-        sites_to_scrape=["leboncoin"],
+        sites_to_scrape=["lacentrale"],
         car_id=None,
     )
 

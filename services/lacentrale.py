@@ -1,3 +1,4 @@
+from typing import Any
 from camoufox.sync_api import Camoufox
 from time import sleep
 from browser import client, types
@@ -11,13 +12,13 @@ from urllib.parse import urlencode, urlunparse, ParseResult
 domain = "https://www.lacentrale.fr/"
 
 lacentrale_fuel_dict = {
-    0: "alt",  # Autre (Other), including duplicate
-    1: "ess",  # Essence (Gasoline)
-    2: "dies",  # Diesel
-    3: "gpl",  # GPL (Autogas), including duplicate
-    6: "elec",  # Électrique (Electric)
-    7: "hyb",  # Hybride variations
-    9: "eth",  # Éthanol (Ethanol), including duplicate
+    0: "OTHER",  # Autre (Other), including duplicate
+    1: "ESSENCE",  # Essence (Gasoline)
+    2: "DIESEL",  # Diesel
+    3: "BIO_ESSENCE_GPL",  # GPL (Autogas), including duplicate
+    6: "ELECTRIC",  # Électrique (Electric)
+    7: "HYBRID",  # Hybride variations
+    9: "ETHANOL",  # Éthanol (Ethanol), including duplicate
 }
 
 headers = {
@@ -45,43 +46,25 @@ params = {
 
 
 def extract_10_cars(
-    soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
+    json_or_soup: Any, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car]:
     cars = []
-    for x in soup.css("div.searchCard"):
-        price = x.css_first(
-            'div[class="Text_Text_text Text_Text_subtitle-large vehiclecardV2_vehiclePrice__En33S"]'
-        )
-        price = (
-            float(utils.get_text(price).replace("€", "").replace(" ", "").strip())
-            if price
-            else None
-        )
-        characs = x.css('div[class="Text_Text_text Text_Text_body-medium"]')
-        if len(characs) < 4:
+    hits = json_or_soup["hits"]
+    for hit in hits:
+        item = hit.get("item")
+        if not item:
             continue
-        mileage = (
-            float(utils.get_text(characs[2]).replace("km", "").replace(" ", "").strip())
-            if characs[2]
-            else None
-        )
-        deal_type = utils.get_text(x.css_first('span[class="Tag_Tag_label"]'))
-        name = utils.get_text(x.css_first("h2"))
-        sub_name = utils.get_text(x.css_first("div.vehiclecardV2_subTitle__c8h4X"))
-        fuel_type = utils.get_text(characs[3])
-        boite_de_vitesse = utils.get_text(characs[1])
-        image = x.css_first("img")
-        image = image.attributes.get("src") if image else None
-        image = image.split("?")[0] if image else None
-        link = x.css_first("a")
-        seller = x.css_first('span[class="vehiclecardV2_sellerContainer__DlVDY"]')
-        seller = seller.text() if seller else None
-        # print("seller", seller)
-        if "AUTO BRASS" in str(seller):
-            continue
-        link = (
-            f"https://www.lacentrale.fr{link.attributes.get('href')}" if link else link
-        )
+        car = item.get("vehicle")
+        name = car.get("detailedModel")
+        price = item.get("price")
+        deal_type = item.get("goodDealBadge")
+        link = "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
+        image = item.get("photoUrl")
+        mileage = car.get("mileage")
+        car_metadata = car.get("version")
+        fuel_type = car.get("energy")
+        boite_de_vitesse = car.get("gearbox")
+        parent_car_id = parent_car_id
         cars.append(
             Car(
                 id="",
@@ -91,7 +74,7 @@ def extract_10_cars(
                 link=link,
                 image=image,
                 mileage=mileage,
-                car_metadata=sub_name,
+                car_metadata=car_metadata,
                 domain=domain,
                 fuel_type=fuel_type,
                 boite_de_vitesse=boite_de_vitesse,
@@ -216,8 +199,8 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     filter_url = urlunparse(
         ParseResult(
             scheme="https",
-            netloc="www.lacentrale.fr",
-            path="/listing",
+            netloc="mobile-app.lacentrale.fr",
+            path="/api/v1/listing",
             params="",
             query=query_string,
             fragment="",
@@ -296,33 +279,24 @@ def main(car_dict: dict, mileage_plus_minus) -> list[Car] | None:
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
-    cars_selector = 'div[class="listingContainer"]'
-    page = None
-    with Camoufox(headless=False) as browser:
-        if not page:
-            page = browser.new_page()
-        for idx, filter_url in enumerate(filter_urls):
-            page.goto(filter_url, timeout=120000)
-            page.wait_for_selector(cars_selector, timeout=120000)
-            soup = HTMLParser(page.content())
-            print(f"Filter url - {filter_url}")
-            # get the listing page
-            is_basic_filter = idx == len(filter_urls) - 1
-            cars = get_the_listing_html(
-                car_dict,
-                filter_url,
-                domain,
-                car_dict["id"],
-                extract_10_cars,
-                is_basic_filter=is_basic_filter,
-                soup=soup,
-            )
-            print(f"Total cars - {len(cars)}")
-            if cars:
-                break
-            sleep_secs = 5
-            print(f"Sleeping for {sleep_secs} seconds")
-            sleep(sleep_secs)
+    for idx, filter_url in enumerate(filter_urls):
+        print(f"Filter url - {filter_url}")
+        # get the listing page
+        is_basic_filter = idx == len(filter_urls) - 1
+        cars = get_the_listing_html(
+            car_dict,
+            filter_url,
+            domain,
+            car_dict["id"],
+            extract_10_cars,
+            is_basic_filter=is_basic_filter,
+        )
+        print(f"Total cars - {len(cars)}")
+        if cars:
+            break
+        sleep_secs = 3
+        print(f"Sleeping for {sleep_secs} seconds")
+        sleep(sleep_secs)
 
     utils.parse_and_save(car_dict, cars, "lacentrale")
 
