@@ -58,7 +58,9 @@ def extract_10_cars(
         name = car.get("detailedModel")
         price = item.get("price")
         deal_type = item.get("goodDealBadge")
-        link = "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
+        link = (
+            "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
+        )
         image = item.get("photoUrl")
         mileage = car.get("mileage")
         car_metadata = car.get("version")
@@ -142,7 +144,9 @@ def get_prompt_from_make(input_dict: dict) -> str:
     all_versions = []
     if json_data["total"]:
         # Get all the models based on the make
-        models = response.json()["aggs"]["vehicle.makeModelCommercialName"][0]["agg"]
+        models = response.json()["aggs"]["vehicle.makeModelCommercialName"][0][
+            "agg"
+        ]
         for model in models:
             # for inner_model in model["agg"]:
             all_models.append(model["key"])
@@ -184,7 +188,9 @@ def get_options(car_dict: dict):
 
 def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     # build the filter url
-    params["makesModelsCommercialNames"] = f"{car_filter.make}:{car_filter.model}"
+    params["makesModelsCommercialNames"] = (
+        f"{car_filter.make}:{car_filter.model}"
+    )
     params["yearMax"] = car_filter.year_to
     params["yearMin"] = car_filter.year_from
     params["energies"] = car_filter.fuel_type
@@ -275,7 +281,7 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
 
 
 @utils.runner
-def main(car_dict: dict, mileage_plus_minus) -> list[Car] | None:
+def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
