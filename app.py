@@ -70,14 +70,23 @@ def check_if_id_supabase(
     if not ignore_old:
         return site_to_scrape
     client = get_session()
-    response = client.table("Vehicles").select("id").eq("id", row_id).execute()
+    response = (
+        client.table("Vehicles")
+        .select("id", "leboncoin", "lacentrale")
+        .eq("id", row_id)
+        .execute()
+    )
     if not response.data:
         return site_to_scrape
     record = response.data[0]
     if record.get("leboncoin"):
-        site_to_scrape.remove("leboncoin")
+        site_to_scrape.remove(
+            "leboncoin"
+        ) if "leboncoin" in site_to_scrape else None
     if record.get("lacentrale"):
-        site_to_scrape.remove("lacentrale")
+        site_to_scrape.remove(
+            "lacentrale"
+        ) if "lacentrale" in site_to_scrape else None
     return site_to_scrape
 
 
@@ -99,7 +108,9 @@ def start_services(
 
         new_columns = []
         for col in df.columns.to_list():
-            new_columns.append(utils.numeric_to_alphabetic_column_name(int(col)))
+            new_columns.append(
+                utils.numeric_to_alphabetic_column_name(int(col))
+            )
         df.columns = new_columns
         df.fillna(value=0, inplace=True)
         for row_id in range(len(df)):
@@ -229,9 +240,13 @@ def get_all_cars(
         vehicles = []
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
-            comparison_prices = [0] if not comparison_prices else comparison_prices
+            comparison_prices = (
+                [0] if not comparison_prices else comparison_prices
+            )
             vehicle["lowest_price"] = min(comparison_prices)
-            vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
+            vehicle["average_price"] = sum(comparison_prices) / len(
+                comparison_prices
+            )
             avg_price = get_avg_price_based_on_domain(
                 vehicle["comparisons"],
                 percentage_limit,
