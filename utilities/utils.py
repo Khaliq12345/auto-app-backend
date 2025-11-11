@@ -87,13 +87,16 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
     )
 
     # Parse date for year
+    print("DATE ", row_raw_dict["I"])
     try:
-        date = parse(row_raw_dict["I"])
+        date_str = str(row_raw_dict["I"])
+        date = parse(date_str)
         if not date:
-            raise ValueError("Date parsing failed")
+            raise ValueError("Date Parser failed")
         row["year_from"] = date.year
         row["year_to"] = date.year
-    except (ValueError, TypeError):
+    except Exception as e:
+        print("Date Error ", e)
         row["year_from"] = None
         row["year_to"] = None
 
@@ -130,12 +133,13 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
 
 
 def save_to_db(data: dict | list[dict], table: str):
+    print(f"SAVING - {len(data)}")
     try:
         client: Client = create_client(
             supabase_key=supabase_key,
             supabase_url=url,
         )
-        client.table(table).upsert(data).execute()
+        client.table(table).insert(data).execute()
         return True
     except Exception as e:
         print(f"Saving Error - {e}")

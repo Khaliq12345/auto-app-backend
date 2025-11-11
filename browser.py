@@ -3,12 +3,11 @@ from google import genai
 from google.genai import types
 from model.model import Car, Match
 from config import config
-import hashlib
 from datetime import datetime
 import json
 from the_retry import retry
 import httpx
-import hrequests
+from time import sleep
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -53,10 +52,10 @@ LACENTRALE_HEADERS = {
 
 def prompt(car1_details: str, car2_details: str) -> str:
     return f"""
-    You are an expert in automotive comparisons. 
+    You are an expert in automotive comparisons.
     I will provide you with details of two cars, including their make, model, version (if available), and mileage. "
     "Your task is to compare these two cars and calculate a percentage match based on the following attributes: make, model, version, and mileage. "
-    "Use your car knowledge to enhance the comparison, especially for the version attribute, 
+    "Use your car knowledge to enhance the comparison, especially for the version attribute,
     "Assign weights to each attribute as follows: make (20%), model (20%), version (20%), and mileage (40%). "
     "Also provide a short explanation on why a particular percentage is assign to the car"
     "Here are the details for the two cars: "
@@ -146,9 +145,11 @@ def get_the_listing_html(
     for car in ten_cars:
         if not car.link:
             continue
-        car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = (
-            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
+        car.id = f"{int(datetime.now().timestamp())}_{parent_car_id}"
+        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
+            json.dumps(car_dict), car.model_dump_json()
         )
         print(car.matching_percentage, car.matching_percentage_reason)
+        sleep(2)
+
     return ten_cars

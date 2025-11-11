@@ -80,13 +80,9 @@ def check_if_id_supabase(
         return site_to_scrape
     record = response.data[0]
     if record.get("leboncoin"):
-        site_to_scrape.remove(
-            "leboncoin"
-        ) if "leboncoin" in site_to_scrape else None
+        site_to_scrape.remove("leboncoin") if "leboncoin" in site_to_scrape else None
     if record.get("lacentrale"):
-        site_to_scrape.remove(
-            "lacentrale"
-        ) if "lacentrale" in site_to_scrape else None
+        site_to_scrape.remove("lacentrale") if "lacentrale" in site_to_scrape else None
     return site_to_scrape
 
 
@@ -108,9 +104,7 @@ def start_services(
 
         new_columns = []
         for col in df.columns.to_list():
-            new_columns.append(
-                utils.numeric_to_alphabetic_column_name(int(col))
-            )
+            new_columns.append(utils.numeric_to_alphabetic_column_name(int(col)))
         df.columns = new_columns
         df.fillna(value=0, inplace=True)
         for row_id in range(len(df)):
@@ -120,7 +114,7 @@ def start_services(
 
             print(f"Car Info - {car_dict}")
             updated_sites_to_scrape = check_if_id_supabase(
-                car_dict["id"], ignore_old=True, site_to_scrape=sites_to_scrape
+                car_dict["id"], ignore_old=ignore_old, site_to_scrape=sites_to_scrape
             )
             print(f"ID is not scraped by - {updated_sites_to_scrape}")
 
@@ -240,13 +234,9 @@ def get_all_cars(
         vehicles = []
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
-            comparison_prices = (
-                [0] if not comparison_prices else comparison_prices
-            )
+            comparison_prices = [0] if not comparison_prices else comparison_prices
             vehicle["lowest_price"] = min(comparison_prices)
-            vehicle["average_price"] = sum(comparison_prices) / len(
-                comparison_prices
-            )
+            vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
             avg_price = get_avg_price_based_on_domain(
                 vehicle["comparisons"],
                 percentage_limit,
@@ -468,7 +458,7 @@ async def upload_file(file: UploadFile):
 if __name__ == "__main__":
     start_services(
         10000,
-        dev=True,
+        dev=False,
         ignore_old=True,
         sites_to_scrape=["lacentrale"],
         car_id=None,

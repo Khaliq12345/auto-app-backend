@@ -1,13 +1,12 @@
-from typing import Any
-from camoufox.sync_api import Camoufox
 from time import sleep
-from browser import client, types
-from model.model import Filter, Car
+from typing import Any
+from urllib.parse import ParseResult, urlencode, urlunparse
+
 import httpx
+
+from browser import client, get_the_listing_html, types
+from model.model import Car, Filter
 from utilities import utils
-from browser import get_the_listing_html
-from selectolax.parser import HTMLParser
-from urllib.parse import urlencode, urlunparse, ParseResult
 
 domain = "https://www.lacentrale.fr/"
 
@@ -58,9 +57,7 @@ def extract_10_cars(
         name = car.get("detailedModel")
         price = item.get("price")
         deal_type = item.get("goodDealBadge")
-        link = (
-            "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
-        )
+        link = "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
         image = item.get("photoUrl")
         mileage = car.get("mileage")
         car_metadata = car.get("version")
@@ -91,7 +88,7 @@ def extract_10_cars(
 
 
 def user_prompt(models, colors, versions, fuel_types, target_dict):
-    return f""" 
+    return f"""
         You are an AI assistant tasked with generating a dictionary that matches a provided vehicle specification dictionary, using only values from specified lists and dictionaries. I will provide you with:
         - A list of vehicle models.
         - A list of colors.
@@ -132,6 +129,7 @@ def user_prompt(models, colors, versions, fuel_types, target_dict):
 def get_prompt_from_make(input_dict: dict) -> str:
     print("Sending requests to get the models and versions")
     params["makesModelsCommercialNames"] = input_dict["make"]
+    print(params)
     response = httpx.get(
         "https://recherche.lacentrale.fr/v5/aggregations",
         params=params,
@@ -144,9 +142,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
     all_versions = []
     if json_data["total"]:
         # Get all the models based on the make
-        models = response.json()["aggs"]["vehicle.makeModelCommercialName"][0][
-            "agg"
-        ]
+        models = response.json()["aggs"]["vehicle.makeModelCommercialName"][0]["agg"]
         for model in models:
             # for inner_model in model["agg"]:
             all_models.append(model["key"])
@@ -188,9 +184,7 @@ def get_options(car_dict: dict):
 
 def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     # build the filter url
-    params["makesModelsCommercialNames"] = (
-        f"{car_filter.make}:{car_filter.model}"
-    )
+    params["makesModelsCommercialNames"] = f"{car_filter.make}:{car_filter.model}"
     params["yearMax"] = car_filter.year_to
     params["yearMin"] = car_filter.year_from
     params["energies"] = car_filter.fuel_type
@@ -216,10 +210,12 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
 
 
 def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
+    print("CAR - ", car_dict)
     print("Generating Filter url based on row dict")
+    prompt_to_use = get_prompt_from_make(car_dict)
     response = client.models.generate_content(
         model="gemini-2.0-flash",
-        contents=get_prompt_from_make(car_dict),
+        contents=prompt_to_use,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=Filter,
@@ -282,7 +278,17 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
 
 @utils.runner
 def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
-    filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
+    make = car_dict["make"]
+    if make == "VW":
+        print("MAKE ", make)
+        make = "VOLKSWAGEN"
+    elif make == "DS AUTOMOBILES":
+        make = "DS"
+    car_dict["make"] = make
+    try:
+        filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
+    except Exception as e:
+        print(e)
     filter_urls.reverse()
     cars = []
     for idx, filter_url in enumerate(filter_urls):
