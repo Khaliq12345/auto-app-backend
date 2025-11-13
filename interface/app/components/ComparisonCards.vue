@@ -1,41 +1,30 @@
 <template>
-    <div class="min-h-screen bg-background">
-        <div class="container mx-auto px-4 py-8 space-y-8">
-            <Header />
+    <div class="space-y-6">
+        <ComparisonCard
+            v-if="groupedData.lacentrale.length > 0"
+            :comparisons="groupedData.lacentrale"
+            slug="lacentrale"
+        />
 
-            <ScrapingCard />
-
-            <ListingCard />
-
-            <!-- Details Button and Modal -->
-            <div class="flex justify-center">
-                <UButton
-                    @click="open = true"
-                    size="lg"
-                    icon="i-heroicons-eye"
-                    class="px-8"
-                >
-                    View Details
-                </UButton>
-            </div>
-
-            <!-- Details Modal with ComparisonCards -->
-            <UModal v-model:open="open" title="Comparison Details">
-                <template #body>
-                    <ComparisonCards :comparisons="sampleComparisons" />
-                </template>
-            </UModal>
-        </div>
+        <ComparisonCard
+            v-if="groupedData.leboncoin.length > 0"
+            :comparisons="groupedData.leboncoin"
+            slug="leboncoin"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import type { ComparisonItem } from "~/types";
+import type { ComparisonItem, GroupedComparisons } from "~/types";
 
-const open = ref(false);
+interface Props {
+    comparisons: ComparisonItem[];
+}
 
-// Données test
-const sampleComparisons: ComparisonItem[] = [
+const props = defineProps<Props>();
+
+// Test data
+const testComparisons: ComparisonItem[] = [
     {
         id: "1762713077_9143559",
         link: "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html",
@@ -76,7 +65,7 @@ const sampleComparisons: ComparisonItem[] = [
     },
     {
         id: "1762713101_9143560",
-        link: "https://www.leboncoin.fr/voitures/2345678901.htm",
+        link: "https://www.leboncoin.fr/auto-occasion-annonce-12345.html",
         name: "RENAULT KANGOO",
         image: "https://i.pinimg.com/1200x/89/c4/5c/89c45c520acbfac39152c1f1c3e6ed66.jpg",
         price: 25000,
@@ -91,26 +80,33 @@ const sampleComparisons: ComparisonItem[] = [
         boite_de_vitesse: "AUTO",
         matching_percentage: 85,
         matching_percentage_reason:
-            "Similar electric van with comparable specifications and good value proposition.",
-    },
-    {
-        id: "1762713102_9143561",
-        link: "https://www.leboncoin.fr/voitures/2345678902.htm",
-        name: "PEUGEOT PARTNER",
-        image: null,
-        price: 22000,
-        domain: "https://www.leboncoin.fr/",
-        mileage: 75000,
-        deal_type: "AVERAGE_DEAL",
-        fuel_type: "ELECTRIC",
-        created_at: "2025-11-09T18:31:53.886335+00:00",
-        updated_at: "2025-11-09T19:30:23.451847",
-        car_metadata: "FOURGON ELECTRIQUE COMPACT",
-        parent_car_id: "9143561",
-        boite_de_vitesse: "AUTO",
-        matching_percentage: 80,
-        matching_percentage_reason:
-            "Electric van with decent specifications but higher mileage affects the overall match score.",
+            "Similar electric van with comparable specifications.",
     },
 ];
+
+// Function to group data by domain
+function groupByDomain(comparisons: ComparisonItem[]): GroupedComparisons {
+    return comparisons.reduce(
+        (acc, item) => {
+            if (item.domain === "https://www.lacentrale.fr/") {
+                acc.lacentrale.push(item);
+            } else if (item.domain === "https://www.leboncoin.fr/") {
+                acc.leboncoin.push(item);
+            }
+            return acc;
+        },
+        {
+            lacentrale: [] as ComparisonItem[],
+            leboncoin: [] as ComparisonItem[],
+        },
+    );
+}
+
+// Computed property to group the data
+const groupedData = computed(() => {
+    // Use props.comparisons if provided, otherwise use test data
+    const dataToGroup =
+        props.comparisons?.length > 0 ? props.comparisons : testComparisons;
+    return groupByDomain(dataToGroup);
+});
 </script>
