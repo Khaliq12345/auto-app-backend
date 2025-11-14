@@ -7,6 +7,7 @@
             </template>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>{{ filters }}</div>
                 <UFormField label="Cut Off Price">
                     <UInput
                         v-model="filters.cutOffPrice"
@@ -35,14 +36,6 @@
                     />
                 </UFormField>
 
-                <UFormField label="Type">
-                    <USelect
-                        v-model="filters.type"
-                        :items="dealTypes"
-                        placeholder="Select deal type"
-                    />
-                </UFormField>
-
                 <UFormField label="Model">
                     <UInput
                         v-model="filters.model"
@@ -66,7 +59,6 @@
                     <UButton variant="outline" @click="resetFilters">
                         Reset
                     </UButton>
-                    <UButton @click="applyFilters"> Apply Filters </UButton>
                 </div>
             </template>
         </UCard>
@@ -332,7 +324,7 @@ const testCars: CarData[] = [
         average_price: 0,
         average_price_based_on_best_match: 0,
         price_difference_with_avg_price: -95000,
-        card_color: "orange",
+        card_color: "yellow",
         best_match_percentage: 0,
         best_match_link: null,
     },
@@ -345,74 +337,39 @@ const filters = ref<Filters>({
     name: "",
     model: "",
     deals: "",
-    type: "all",
 });
 
 const dealOptions = [
-    { label: "Best Deals", value: "best" },
-    { label: "Worst Deals", value: "worst" },
-    { label: "Not Bad", value: "not_bad" },
-];
-
-const dealTypes = [
-    { label: "All Types", value: "all" },
-    { label: "Excellent", value: "excellent" },
-    { label: "Good", value: "good" },
-    { label: "Average", value: "average" },
-    { label: "Poor", value: "poor" },
+    { label: "Best Deals", value: "Best Deals" },
+    { label: "Worst Deals", value: "Worst Deals" },
+    { label: "Not Bad", value: "Not Bad" },
 ];
 
 const isComparisonOpen = ref(false);
 const selectedCar = ref<CarData | null>(null);
 
-const appliedFilters = ref<Filters>({
-    cutOffPrice: null,
-    matchingPercent: null,
-    name: "",
-    model: "",
-    deals: "",
-    type: "all",
-});
-
 const filteredCars = computed(() => {
     let result = [...testCars];
 
-    if (appliedFilters.value.cutOffPrice !== null) {
-        result = result.filter(
-            (car) => car.price_with_tax <= appliedFilters.value.cutOffPrice!,
-        );
-    }
-
-    if (appliedFilters.value.matchingPercent !== null) {
-        result = result.filter(
-            (car) =>
-                car.best_match_percentage >=
-                appliedFilters.value.matchingPercent!,
-        );
-    }
-
-    if (appliedFilters.value.name) {
+    if (filters.value.name) {
         result = result.filter((car) =>
-            car.make
-                .toLowerCase()
-                .includes(appliedFilters.value.name.toLowerCase()),
+            car.make.toLowerCase().includes(filters.value.name.toLowerCase()),
         );
     }
 
-    if (appliedFilters.value.model) {
+    if (filters.value.model) {
         result = result.filter((car) =>
-            car.model
-                .toLowerCase()
-                .includes(appliedFilters.value.model.toLowerCase()),
+            car.model.toLowerCase().includes(filters.value.model.toLowerCase()),
         );
     }
 
-    if (appliedFilters.value.deals) {
+    if (filters.value.deals) {
         result = result.filter((car) => {
-            const dealType = appliedFilters.value.deals;
-            if (dealType === "best") return car.card_color === "green";
-            if (dealType === "worst") return car.card_color === "red";
-            if (dealType === "not_bad") return car.card_color === "orange";
+            const dealType = filters.value.deals;
+            console.log(dealType);
+            if (dealType === "Best Deals") return car.card_color === "green";
+            if (dealType === "Worst Deals") return car.card_color === "red";
+            if (dealType === "Not Bad") return car.card_color === "yellow";
             return true;
         });
     }
@@ -428,22 +385,7 @@ function resetFilters() {
         name: "",
         model: "",
         deals: "",
-        type: "all",
     };
-
-    appliedFilters.value = {
-        cutOffPrice: null,
-        matchingPercent: null,
-        name: "",
-        model: "",
-        deals: "",
-        type: "all",
-    };
-}
-
-function applyFilters() {
-    appliedFilters.value = { ...filters.value };
-    console.log("Filters applied:", appliedFilters.value);
 }
 
 function openComparison(car: CarData) {
@@ -457,8 +399,8 @@ function getCardColorClass(color: string) {
             return "border-l-4 border-red-500";
         case "green":
             return "border-l-4 border-green-500";
-        case "orange":
-            return "border-l-4 border-orange-500";
+        case "yellow":
+            return "border-l-4 border-yellow-500";
         default:
             return "border-l-4 border-gray-300";
     }
@@ -472,7 +414,7 @@ function getDealBadgeColor(
             return "success";
         case "red":
             return "error";
-        case "orange":
+        case "yellow":
             return "warning";
         default:
             return "neutral";
