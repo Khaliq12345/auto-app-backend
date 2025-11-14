@@ -1,30 +1,32 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from postgrest.types import CountMethod
-from services import autoscout24, lacentrale, leboncoin
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Annotated, Optional, Union
+
+import aiofiles
 import pandas as pd
-from utilities import utils
 from fastapi import (
-    FastAPI,
-    Depends,
-    HTTPException,
     BackgroundTasks,
+    Depends,
+    FastAPI,
+    HTTPException,
     UploadFile,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Annotated, Optional, Union
+from postgrest.types import CountMethod
 from supabase import (
-    Client,
     AuthApiError,
+    Client,
     create_client,
 )
-from datetime import datetime
-import os
-import aiofiles
-from config import config
-from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 
+from config import config
+from services import autoscout24, lacentrale, leboncoin
+from utilities import utils
 
 OUT_FILE = Path(config.UPLOAD_FILE)
 session_deps = Depends()
@@ -203,25 +205,25 @@ def login(
 
 @app.get("/get_all_cars")
 def get_all_cars(
-    access_token: str,
-    refresh_token: str,
+    # access_token: str,
+    # refresh_token: str,
     client: Annotated[Client, Depends(get_session)],
-    page: int = 0,
+    offset: int = 0,
     limit: int = 20,
     cut_off_price: int = 500,
     domain: str | None = None,
     percentage_limit: int = 95,
 ):
     try:
-        auth = client.auth.set_session(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
+        # auth = client.auth.set_session(
+        #     access_token=access_token,
+        #     refresh_token=refresh_token,
+        # )
         stmt = (
             client.table("Vehicles")
             .select("*, comparisons(*)", count=CountMethod.exact)
             .limit(limit)
-            .offset(page)
+            .offset(offset)
             .order(
                 "matching_percentage",
                 desc=True,
@@ -268,7 +270,7 @@ def get_all_cars(
 
             vehicles.append(vehicle)  # 2091556
         return {
-            "session": jsonable_encoder(auth),
+            # "session": jsonable_encoder(auth),
             "details": jsonable_encoder(vehicles),
             "total": response.count,
         }
@@ -281,53 +283,20 @@ def get_all_cars(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/get_car_comparisons")
-def get_car_comparisons(
-    access_token: str,
-    refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
-    car_id: str,
-):
-    try:
-        auth = client.auth.set_session(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
-        response = (
-            client.table("comparisons")
-            .select("*")
-            .order("matching_percentage", desc=True)
-            .eq("parent_car_id", car_id)
-            .execute()
-        )
-        return {
-            "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(response),
-        }
-
-    except AuthApiError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/scrape_status")
 def get_status(
-    access_token: str,
-    refresh_token: str,
+    # access_token: str,
+    # refresh_token: str,
     client: Annotated[Client, Depends(get_session)],
 ):
     try:
-        auth = client.auth.set_session(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
+        # auth = client.auth.set_session(
+        #     access_token=access_token,
+        #     refresh_token=refresh_token,
+        # )
         response = client.table("Status").select("*").execute()
         return {
-            "session": jsonable_encoder(auth),
+            # "session": jsonable_encoder(auth),
             "details": jsonable_encoder(response),
         }
     except AuthApiError:
@@ -337,122 +306,6 @@ def get_status(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/start_scraping")
-def get_start_scraping(
-    access_token: str,
-    refresh_token: str,
-    background_task: BackgroundTasks,
-    client: Annotated[Client, Depends(get_session)],
-    dev: bool = True,
-    mileage_plus_minus: int = 10000,
-    ignore_old: bool = True,
-    sites_to_scrape: list[str] = [],
-):
-    try:
-        auth = client.auth.set_session(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
-        response = client.table("Status").select("status").eq("id", 1).execute()
-        if response.data[0]["status"] != "running":
-            background_task.add_task(
-                start_services,
-                mileage_plus_minus,
-                ignore_old,
-                sites_to_scrape,
-                dev,
-            )
-            client.table("Status").update(
-                {
-                    "id": 1,
-                    "status": "running",
-                    "started_at": datetime.now().isoformat(),
-                    "total_completed": 0,
-                }
-            ).eq("id", 1).execute()
-            return {
-                "message": "Scraping started",
-                "session": jsonable_encoder(auth),
-            }
-        else:
-            return {
-                "message": "Scraping already started",
-                "session": jsonable_encoder(auth),
-            }
-    except AuthApiError:
-        client.table("Status").update(
-            {
-                "id": 1,
-                "status": "failed",
-                "stopped_at": datetime.now().isoformat(),
-            }
-        ).eq("id", 1).execute()
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-        )
-    except Exception as e:
-        client.table("Status").update(
-            {
-                "id": 1,
-                "status": "failed",
-                "stopped_at": datetime.now().isoformat(),
-            }
-        ).eq("id", 1).execute()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/upload")
-async def upload_file(file: UploadFile):
-    """
-    Upload a large file to the server via streaming.
-
-    Args:
-        file (UploadFile): The file to upload (.xlsx or .xls)
-
-    Returns:
-        dict: Upload status and file path
-    """
-    # Validate file
-    # if not file:
-    #     raise HTTPException(status_code=400, detail="No file provided")
-    #
-    # Validate file extension
-    if not file.filename:
-        return None
-
-    file_extension = os.path.splitext(file.filename)[1].lower()
-    allowed_extensions = {".xlsx", ".xls"}
-    if file_extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail="Only Excel files (.xlsx, .xls) are allowed",
-        )
-
-    try:
-        # Stream the file to disk in chunks
-        async with aiofiles.open(OUT_FILE, "wb") as out_file:
-            while chunk := await file.read(256 * 256):  # Read 1MB chunks
-                await out_file.write(chunk)
-
-    except Exception as e:
-        # Clean up if something goes wrong
-        if os.path.exists(OUT_FILE):
-            os.remove(OUT_FILE)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error uploading file: {str(e)}",
-        )
-
-    finally:
-        # Ensure the file is closed
-        await file.close()
-    return {
-        "message": "File uploaded successfully",
-        "file_path": OUT_FILE,
-    }
 
 
 if __name__ == "__main__":
