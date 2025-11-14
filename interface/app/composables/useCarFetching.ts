@@ -1,6 +1,6 @@
 import type { CarData, CarsResponse, CarsResponseDetails } from "~/types";
 
-export function useCarFetching() {
+export function useCarFetching(domain?: string) {
   // Configuration
   const DEFAULT_LIMIT = 20;
   const MAX_RETRIES = 3;
@@ -12,22 +12,6 @@ export function useCarFetching() {
   const fetchError = ref<string | null>(null);
   const hasMounted = ref(false);
   const total = ref(0);
-
-  // Determine active domain from route for filtering cars by source platform
-  const activeDomain = computed(() => {
-    const route = useRoute();
-    if (route.path === "/home" || route.path === "/") {
-      return null;
-    }
-    if (
-      typeof route.params.domain === "string" &&
-      route.params.domain !== "home"
-    ) {
-      return route.params.domain;
-    }
-    const segments = route.path.split("/").filter(Boolean);
-    return segments.length > 0 && segments[0] !== "home" ? segments[0] : null;
-  });
 
   // Methods
   async function fetchCars() {
@@ -48,7 +32,7 @@ export function useCarFetching() {
               limit,
               cut_off_price: 500,
               percentage_limit: 95,
-              domain: activeDomain.value ?? undefined,
+              domain: domain ?? undefined,
             },
           });
 
@@ -112,15 +96,6 @@ export function useCarFetching() {
       isLoading.value = false;
     }
   }
-
-  // Watchers
-  watch(
-    () => activeDomain.value,
-    async () => {
-      if (!hasMounted.value) return;
-      await fetchCars();
-    },
-  );
 
   // Lifecycle
   onMounted(async () => {

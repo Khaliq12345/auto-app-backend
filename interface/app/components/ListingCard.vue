@@ -143,8 +143,16 @@ import type { CarData } from "~/types";
 const ITEMS_PER_PAGE = 20;
 const DEFAULT_PERCENTAGE_LIMIT = 95;
 
+interface Props {
+  domain?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  domain: undefined,
+});
+
 // Use composables
-const { cars, isLoading, fetchError } = useCarFetching();
+const { cars, isLoading, fetchError } = useCarFetching(props.domain);
 
 // Filters
 const filters = ref({
