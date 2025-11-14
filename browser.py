@@ -3,11 +3,11 @@ from google import genai
 from google.genai import types
 from model.model import Car, Match
 from config import config
-import hashlib
 from datetime import datetime
 import json
 from the_retry import retry
 import httpx
+from time import sleep
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -23,28 +23,39 @@ HEADERS = {
     "authorization": f"Basic {config.SMART_PROXY}",
 }
 
-LACENTALE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0",
-    "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Content-Type": "application/json",
-    "Origin": "https://www.lacentrale.fr",
-    "Connection": "keep-alive",
-    "Referer": "https://www.lacentrale.fr/",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "cross-site",
-    "Priority": "u=6",
-    "Cookie": "datadome=ciYGhJL4Xb2Y76J0qGPm59Z2UuGlV938ZNZIYAmUVHcf3_LJ7CKHOsWEMgbPqaeDLy6w2JzbCVkHg4xvnuyJCsiqQzuRnHlMPFfv7r9vxh57XI1wTZddgGbqn1tOssg~; Max-Age=31536000; Domain=.lacentrale.fr; Path=/; Secure; SameSite=Lax",
+LACENTRALE_COOKIES = {
+    "access-token": "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTcyNDUyNTAsInZlcnNpb24iOiIyMDE4LTA3LTE2IiwidXNlckNvcnJlbGF0aW9uSWQiOm51bGwsInVzZXJfY29ycmVsYXRpb25faWQiOm51bGwsImxvZ2dlZFVzZXIiOnsiY29ycmVsYXRpb25JZCI6bnVsbCwicmVmcmVzaFRva2VuVFRMIjoxNzYxMTI5NjUwfSwibW9kZU1hc3F1ZXJhZGUiOmZhbHNlLCJhdXRob3JpemF0aW9ucyI6eyJ2ZXJzaW9uIjoiMjAxOC0wNy0xNiIsInN0YXRlbWVudHMiOlt7InNpZCI6IioiLCJlZmZlY3QiOiJEZW55IiwiYWN0aW9ucyI6WyIqIl0sInJlc291cmNlcyI6WyIqIl19XX0sImlhdCI6MTc1NzI0MTY1MH0.tx0GGQ_wYcTcK1g5_-z2czcZd97yKBGTjgjoUPKeDLYVFIUTFOhfQZe7rTicN8hB7DewDnzQuMsvkyLlzur9iLknLiOoKzFKQSirQMAkKmTakWRmCnqxqud7JNwi9tx0tbwg1K7oYxv5aIl4DyJARbFnQkks9KWF88OCv2gaRUOd9HOITXmKB7vpwUv9xtRtyQhQejI6mB7Or5L3YkomerYBXh3QUlo3h9klTmsMeeIhxNMc_SWNvaaraJnzTSJTT-MqNWeYQGSVR7omZRa4YeWfEXS45aPzx5RjdszhVTz74YRTBYyE8IL7495BNJFXJjmCGmEXnz9M19kVl3yn7A",
+    "kameleoonVisitorCode": "ghu7fueff",
+    "kameleoonTrackings": "%5B%7B%22Experiments.assignVariation%22%3A%22289282%2C1068407%22%2C%22Experiments.trigger%22%3A%22289282%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22298892%2C1150713%22%2C%22Experiments.trigger%22%3A%22298892%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22302730%2C1099455%22%2C%22Experiments.trigger%22%3A%22302730%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22304495%2C1103475%22%2C%22Experiments.trigger%22%3A%22304495%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313627%2C1127045%22%2C%22Experiments.trigger%22%3A%22313627%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313978%2C1126422%22%2C%22Experiments.trigger%22%3A%22313978%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22315702%2C1130328%22%2C%22Experiments.trigger%22%3A%22315702%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22327940%2C1157938%22%2C%22Experiments.trigger%22%3A%22327940%2Ctrue%22%7D%5D",
+    "kameleoonFeatureFlags": "%5B%22composer-classified-composer%22%2C%22copy_af64u95oqng_copy_jr16u2dmikg__dev__cas__logged_cote-seeprice%22%2C%22copy_h6f1fpu0cbg_copy_dsg7dt33qvo__dev__cas__ab_highlight_area-highlight_depot%22%2C%22lacentrale-chat-2-0-13%22%2C%22new-financing-design-activated%22%2C%22one-click-call-activated%22%2C%22one-click-call-wording-activated%22%2C%22publicity-default%22%2C%22strengths-revamp-on%22%5D",
+    "visitor_id": "d79cf621-26aa-4ba5-86e7-abf6caa93543",
+    "_pprv": "eyJjb25zZW50Ijp7IjAiOnsibW9kZSI6ImVzc2VudGlhbCJ9LCI3Ijp7Im1vZGUiOiJvcHQtaW4ifX0sInB1cnBvc2VzIjp7IjAiOiJBTSIsIjciOiJETCJ9LCJfdCI6Im11eHo4bDBwfG1mOWtiM29wIn0%3D",
+    "atidvisitor251312": "%7B%22name%22%3A%22atidvisitor251312%22%2C%22val%22%3A%7B%22vrn%22%3A%22-251312-%22%7D%2C%22options%22%3A%7B%22path%22%3A%22%2F%22%2C%22session%22%3A15724800%2C%22end%22%3A15724800%7D%7D",
+    "tCdebugLib": "1",
+    "pa_vid": "%22d79cf621-26aa-4ba5-86e7-abf6caa93543%22",
+    "didomi_token": "eyJ1c2VyX2lkIjoiMTk5MjNjM2ItNGIxNS02MGUzLTkwOGMtMTE0MWJjOWU4YTkzIiwiY3JlYXRlZCI6IjIwMjUtMDktMDdUMTA6NDA6NTIuNDAxWiIsInVwZGF0ZWQiOiIyMDI1LTA5LTA3VDEwOjQwOjUyLjQwMloiLCJ2ZXJzaW9uIjpudWxsfQ==",
+    "atuserid": "%7B%22name%22%3A%22atuserid%22%2C%22val%22%3A%22d79cf621-26aa-4ba5-86e7-abf6caa93543%22%2C%22options%22%3A%7B%22end%22%3A%222026-03-08T10%3A47%3A05.147Z%22%2C%22path%22%3A%22%2F%22%7D%7D",
+    "datadome": "_BTvZHaw9eXcTRGcc0dP4NZGdVPGRU~AvwWo1N4xKB23ru6XDutJBZAptGxN8VRMRtpPG2qIvxEE4AUbjxA9fXOglHMpTPK6ZHKpM6gmPgWJXys08mnKGd9BFVg1HPFN",
+}
+
+LACENTRALE_HEADERS = {
+    "accept": "application/json, text/plain, */*",
+    "Connection": "Keep-Alive",
+    "firebase-performance-monitoring": "enabled",
+    "Host": "mobile-app.lacentrale.fr",
+    "If-Modified-Since": "Tue, 09 Sep 2025 11:41:18 GMT",
+    "User-Agent": "Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/21.0 Chrome/110.0.5481.154 Mobile Safari/537.36",
+    "x-client-source": "classified:android:lcpab",
+    "x-datadome-clientid": "G1Se~xWYXhugRwT4YRhwrgxNIBJbgSh4giiyvsgEZ3q3hsqCcQCMhE8TmSWECIm6UsFcE_~6D8UVQzHkJ_go90Ph9B2tNjD7desAwO94JRh8sZLM4JM4S~Pn68gY29ro",
 }
 
 
 def prompt(car1_details: str, car2_details: str) -> str:
     return f"""
-    You are an expert in automotive comparisons. 
+    You are an expert in automotive comparisons.
     I will provide you with details of two cars, including their make, model, version (if available), and mileage. "
     "Your task is to compare these two cars and calculate a percentage match based on the following attributes: make, model, version, and mileage. "
-    "Use your car knowledge to enhance the comparison, especially for the version attribute, 
+    "Use your car knowledge to enhance the comparison, especially for the version attribute,
     "Assign weights to each attribute as follows: make (20%), model (20%), version (20%), and mileage (40%). "
     "Also provide a short explanation on why a particular percentage is assign to the car"
     "Here are the details for the two cars: "
@@ -94,10 +105,13 @@ def get_the_listing_html(
         if domain == "https://www.lacentrale.fr/":
             proxy = f"http://{config.PROXY_USERNAME}:{config.PROXY_PASSWORD}@fr.decodo.com:40000"
             response = httpx.get(
-                url=filter_url, headers=LACENTALE_HEADERS, proxy=proxy
+                filter_url,
+                # cookies=LACENTRALE_COOKIES,
+                headers=LACENTRALE_HEADERS,
+                # proxy=proxy,
             )
             response.raise_for_status()
-            soup = HTMLParser(response.text)
+            soup = response.json()
         else:
             json_data = {
                 "url": filter_url,
@@ -131,9 +145,11 @@ def get_the_listing_html(
     for car in ten_cars:
         if not car.link:
             continue
-        car.id = f"{hashlib.md5(car.link.encode()).hexdigest()}_{parent_car_id}"
-        car.matching_percentage, car.matching_percentage_reason = (
-            get_percentage_match(json.dumps(car_dict), car.model_dump_json())
+        car.id = f"{int(datetime.now().timestamp())}_{parent_car_id}"
+        car.matching_percentage, car.matching_percentage_reason = get_percentage_match(
+            json.dumps(car_dict), car.model_dump_json()
         )
         print(car.matching_percentage, car.matching_percentage_reason)
+        sleep(2)
+
     return ten_cars

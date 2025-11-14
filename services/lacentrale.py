@@ -1,34 +1,42 @@
-from browser import client, types
-from model.model import Filter, Car
+from time import sleep
+from typing import Any
+from urllib.parse import ParseResult, urlencode, urlunparse
+
 import httpx
+
+from browser import client, get_the_listing_html, types
+from model.model import Car, Filter
 from utilities import utils
-from browser import get_the_listing_html
-from selectolax.parser import HTMLParser
-from urllib.parse import urlencode, urlunparse, ParseResult
 
 domain = "https://www.lacentrale.fr/"
 
 lacentrale_fuel_dict = {
-    0: "alt",  # Autre (Other), including duplicate
-    1: "ess",  # Essence (Gasoline)
-    2: "dies",  # Diesel
-    3: "gpl",  # GPL (Autogas), including duplicate
-    6: "elec",  # Électrique (Electric)
-    7: "hyb",  # Hybride variations
-    9: "eth",  # Éthanol (Ethanol), including duplicate
+    0: "OTHER",  # Autre (Other), including duplicate
+    1: "ESSENCE",  # Essence (Gasoline)
+    2: "DIESEL",  # Diesel
+    3: "BIO_ESSENCE_GPL",  # GPL (Autogas), including duplicate
+    6: "ELECTRIC",  # Électrique (Electric)
+    7: "HYBRID",  # Hybride variations
+    9: "ETHANOL",  # Éthanol (Ethanol), including duplicate
 }
 
 headers = {
-    "sec-ch-ua-platform": '"Linux"',
-    "Referer": "https://www.lacentrale.fr/",
-    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
-    "sec-ch-ua-mobile": "?0",
-    "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
-    "X-Client-Source": "lc:recherche:front",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
     "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Connection": "keep-alive",
+    "Origin": "https://www.lacentrale.fr",
+    "Referer": "https://www.lacentrale.fr/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "X-Client-Source": "lc:recherche:front",
+    "sec-ch-ua": '"Chromium";v="139", "Not;A=Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Linux"',
+    "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
+    "x-datadome-clientid": "JNb4_NnyXOPwiOJwcbNxzYFyV5P6ogS9zCktTxOPqCYHxenbeztrym0r~4HQfIa_0Pf4JW47T8VtWdYD5NAQ3uDeTI0bkCW9TheskiGTX4~dGjNrNmYgxp9nKn_4XLjm",
 }
-
 params = {
     "aggregations": "EXTERNAL_COLOR,MAKE_MODEL_COMMERCIAL_NAME,VERSION",
     "families": "AUTO,UTILITY",
@@ -37,43 +45,25 @@ params = {
 
 
 def extract_10_cars(
-    soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
+    json_or_soup: Any, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car]:
     cars = []
-    for x in soup.css("div.searchCard"):
-        price = x.css_first(
-            'div[class="Text_Text_text Text_Text_subtitle-large vehiclecardV2_vehiclePrice__En33S"]'
-        )
-        price = (
-            float(utils.get_text(price).replace("€", "").replace(" ", "").strip())
-            if price
-            else None
-        )
-        characs = x.css('div[class="Text_Text_text Text_Text_body-medium"]')
-        if len(characs) < 4:
+    hits = json_or_soup["hits"]
+    for hit in hits:
+        item = hit.get("item")
+        if not item:
             continue
-        mileage = (
-            float(utils.get_text(characs[2]).replace("km", "").replace(" ", "").strip())
-            if characs[2]
-            else None
-        )
-        deal_type = utils.get_text(x.css_first('span[class="Tag_Tag_label"]'))
-        name = utils.get_text(x.css_first("h2"))
-        sub_name = utils.get_text(x.css_first("div.vehiclecardV2_subTitle__c8h4X"))
-        fuel_type = utils.get_text(characs[3])
-        boite_de_vitesse = utils.get_text(characs[1])
-        image = x.css_first("img")
-        image = image.attributes.get("src") if image else None
-        image = image.split("?")[0] if image else None
-        link = x.css_first("a")
-        seller = x.css_first('span[class="vehiclecardV2_sellerContainer__DlVDY"]')
-        seller = seller.text() if seller else None
-        # print("seller", seller)
-        if "AUTO BRASS" in str(seller):
-            continue
-        link = (
-            f"https://www.lacentrale.fr{link.attributes.get('href')}" if link else link
-        )
+        car = item.get("vehicle")
+        name = car.get("detailedModel")
+        price = item.get("price")
+        deal_type = item.get("goodDealBadge")
+        link = "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html"
+        image = item.get("photoUrl")
+        mileage = car.get("mileage")
+        car_metadata = car.get("version")
+        fuel_type = car.get("energy")
+        boite_de_vitesse = car.get("gearbox")
+        parent_car_id = parent_car_id
         cars.append(
             Car(
                 id="",
@@ -83,7 +73,7 @@ def extract_10_cars(
                 link=link,
                 image=image,
                 mileage=mileage,
-                car_metadata=sub_name,
+                car_metadata=car_metadata,
                 domain=domain,
                 fuel_type=fuel_type,
                 boite_de_vitesse=boite_de_vitesse,
@@ -98,7 +88,7 @@ def extract_10_cars(
 
 
 def user_prompt(models, colors, versions, fuel_types, target_dict):
-    return f""" 
+    return f"""
         You are an AI assistant tasked with generating a dictionary that matches a provided vehicle specification dictionary, using only values from specified lists and dictionaries. I will provide you with:
         - A list of vehicle models.
         - A list of colors.
@@ -139,11 +129,13 @@ def user_prompt(models, colors, versions, fuel_types, target_dict):
 def get_prompt_from_make(input_dict: dict) -> str:
     print("Sending requests to get the models and versions")
     params["makesModelsCommercialNames"] = input_dict["make"]
+    print(params)
     response = httpx.get(
         "https://recherche.lacentrale.fr/v5/aggregations",
         params=params,
         headers=headers,
     )
+    print(f"Filter - {response.status_code}")
     json_data = response.json()
     all_models = []
     all_colors = []
@@ -207,8 +199,8 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
     filter_url = urlunparse(
         ParseResult(
             scheme="https",
-            netloc="www.lacentrale.fr",
-            path="/listing",
+            netloc="mobile-app.lacentrale.fr",
+            path="/api/v1/listing",
             params="",
             query=query_string,
             fragment="",
@@ -218,10 +210,12 @@ def get_filter_url(params: dict, car_dict: dict, car_filter: Filter) -> str:
 
 
 def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
+    print("CAR - ", car_dict)
     print("Generating Filter url based on row dict")
+    prompt_to_use = get_prompt_from_make(car_dict)
     response = client.models.generate_content(
         model="gemini-2.0-flash",
-        contents=get_prompt_from_make(car_dict),
+        contents=prompt_to_use,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=Filter,
@@ -284,7 +278,17 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
 
 @utils.runner
 def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
-    filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
+    make = car_dict["make"]
+    if make == "VW":
+        print("MAKE ", make)
+        make = "VOLKSWAGEN"
+    elif make == "DS AUTOMOBILES":
+        make = "DS"
+    car_dict["make"] = make
+    try:
+        filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
+    except Exception as e:
+        print(e)
     filter_urls.reverse()
     cars = []
     for idx, filter_url in enumerate(filter_urls):
@@ -302,7 +306,11 @@ def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
         print(f"Total cars - {len(cars)}")
         if cars:
             break
-    utils.parse_and_save(car_dict, cars)
+        sleep_secs = 3
+        print(f"Sleeping for {sleep_secs} seconds")
+        sleep(sleep_secs)
+
+    utils.parse_and_save(car_dict, cars, "lacentrale")
 
 
 if __name__ == "__main__":
