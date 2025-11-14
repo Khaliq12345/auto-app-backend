@@ -25,15 +25,21 @@
             <div class="p-0">
                 <UPageGrid class="gap-4" :columns="{ base: 1, sm: 2 }">
                     <template v-for="metric in metrics" :key="metric.label">
-                        <UCard 
-                            class="bg-background border-border/40 shadow-sm" 
-                            :class="metric.color ? `border-${metric.color}-500` : ''"
+                        <UCard
+                            class="bg-background border-border/40 shadow-sm"
+                            :class="
+                                metric.color ? `border-${metric.color}-500` : ''
+                            "
                         >
                             <div class="p-4">
                                 <div class="flex items-start gap-3">
                                     <UIcon
                                         :name="metric.icon"
-                                        :class="metric.color ? `text-${metric.color}-500` : 'text-primary'"
+                                        :class="
+                                            metric.color
+                                                ? `text-${metric.color}-500`
+                                                : 'text-primary'
+                                        "
                                         class="text-xl"
                                     />
                                     <div class="space-y-1">
@@ -47,7 +53,10 @@
                                         >
                                             {{ metric.value }}
                                         </p>
-                                        <p v-if="metric.subtitle" class="text-xs text-gray-500">
+                                        <p
+                                            v-if="metric.subtitle"
+                                            class="text-xs text-gray-500"
+                                        >
                                             {{ metric.subtitle }}
                                         </p>
                                     </div>
@@ -65,9 +74,13 @@
 import type { ScrapingStatusResponse } from "~/types";
 
 // Fetch scraping status from API with error handling
-const { data: scrapingStatus, error: fetchError } = await $fetch<ScrapingStatusResponse>('/api/status')
-  .then(data => ({ data, error: null }))
-  .catch(error => ({ data: null, error: error.message || 'Failed to fetch status' }));
+const { data: scrapingStatus, error: fetchError } =
+    await $fetch<ScrapingStatusResponse>("/api/status")
+        .then((data) => ({ data, error: null }))
+        .catch((error) => ({
+            data: null,
+            error: error.message || "Failed to fetch status",
+        }));
 
 const statusColor = {
     success: "success",
@@ -91,15 +104,18 @@ const stopped_at = latestStatus?.stopped_at ?? started_at;
 const last_updated = stopped_at ?? new Date().toISOString();
 
 // Calculate progress based on completed vs running totals
-const progress = total_running > 0
-    ? Math.min(100, Math.round((total_completed / total_running) * 100))
-    : 0;
+const progress =
+    total_running > 0
+        ? Math.min(100, Math.round((total_completed / total_running) * 100))
+        : 0;
 const hasErrors = Boolean(latestStatus?.errors);
 
-const badgeColor = fetchError ? "error" : 
-    statusColor[status as keyof typeof statusColor] ?? "neutral";
-const badgeLabel = fetchError ? "API Error" :
-    statusLabel[status as keyof typeof statusLabel] ?? status;
+const badgeColor = fetchError
+    ? "error"
+    : (statusColor[status as keyof typeof statusColor] ?? "neutral");
+const badgeLabel = fetchError
+    ? "API Error"
+    : (statusLabel[status as keyof typeof statusLabel] ?? status);
 
 const metrics = [
     {
@@ -118,7 +134,13 @@ const metrics = [
         label: "Progress",
         icon: "i-heroicons-chart-bar",
         value: fetchError ? "N/A" : `${progress}%`,
-        color: fetchError ? "error" : hasErrors ? "error" : progress === 100 ? "success" : "info",
+        color: fetchError
+            ? "error"
+            : hasErrors
+              ? "error"
+              : progress === 100
+                ? "success"
+                : "info",
     },
     {
         label: "Last updated",
