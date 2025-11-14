@@ -51,6 +51,17 @@ export interface Filters {
   deals: string;
 }
 
+export interface CarsResponseDetails {
+  data: CarData[];
+  count: number;
+}
+
+export interface CarsResponse {
+  session?: unknown;
+  details: CarsResponseDetails | CarData[];
+  total?: number;
+}
+
 export interface ScrapingStatus {
   status: string;
   total_completed: number;
@@ -62,4 +73,39 @@ export interface ScrapingStatus {
 export interface GroupedComparisons {
   lacentrale: ComparisonItem[];
   leboncoin: ComparisonItem[];
+}
+
+export interface ScrapingStatusItem {
+  id: number;
+  status: string;
+  total_completed: number;
+  total_running: number;
+  started_at?: string;
+  stopped_at?: string;
+  created_at?: string;
+  errors?: string | null;
+  progress?: number | null;
+}
+
+export interface ScrapingStatusDetails {
+  data: ScrapingStatusItem[];
+  count: number | null;
+}
+
+export interface ScrapingStatusSession {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at: number;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface ScrapingStatusResponse {
+  session: ScrapingStatusSession;
+  details: ScrapingStatusDetails;
 }

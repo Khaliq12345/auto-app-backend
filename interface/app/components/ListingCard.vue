@@ -5,7 +5,6 @@
             <template #header>
                 <h2 class="text-xl font-semibold">Filters</h2>
             </template>
-
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <UFormField label="Cut Off Price">
                     <UInput
@@ -15,7 +14,6 @@
                         icon="i-heroicons-currency-euro"
                     />
                 </UFormField>
-
                 <UFormField label="Matching Percent">
                     <UInput
                         v-model="filters.matchingPercent"
@@ -26,7 +24,6 @@
                         max="100"
                     />
                 </UFormField>
-
                 <UFormField label="Name">
                     <UInput
                         v-model="filters.name"
@@ -34,7 +31,6 @@
                         icon="i-heroicons-magnifying-glass"
                     />
                 </UFormField>
-
                 <UFormField label="Model">
                     <UInput
                         v-model="filters.model"
@@ -42,7 +38,6 @@
                         icon="i-heroicons-tag"
                     />
                 </UFormField>
-
                 <UFormField label="Deals">
                     <USelect
                         v-model="filters.deals"
@@ -52,7 +47,6 @@
                     />
                 </UFormField>
             </div>
-
             <template #footer>
                 <div class="flex justify-end gap-2">
                     <UButton variant="outline" @click="resetFilters">
@@ -69,10 +63,25 @@
                     Cars ({{ filteredCars.length }})
                 </h2>
             </div>
-
+            <UAlert
+                v-if="fetchError"
+                color="error"
+                variant="soft"
+                icon="i-heroicons-exclamation-triangle"
+            >
+                {{ fetchError }}
+            </UAlert>
+            <UAlert
+                v-else-if="isLoading"
+                color="info"
+                variant="soft"
+                icon="i-heroicons-arrow-path"
+            >
+                Chargement des voitures... ({{ cars.length }} chargées)
+            </UAlert>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <UCard
-                    v-for="car in filteredCars"
+                    v-for="car in paginatedCars"
                     :key="car.id"
                     class="overflow-hidden"
                     :class="getCardColorClass(car.card_color)"
@@ -98,7 +107,6 @@
                                 {{ car.card_color }}
                             </UBadge>
                         </div>
-
                         <!-- Car Details -->
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
@@ -122,7 +130,6 @@
                                 </p>
                             </div>
                         </div>
-
                         <!-- Price Information -->
                         <div class="border-t pt-3">
                             <div class="flex justify-between items-center mb-2">
@@ -146,7 +153,6 @@
                                 >
                             </div>
                         </div>
-
                         <!-- Match Information -->
                         <div
                             v-if="car.best_match_percentage > 0"
@@ -161,7 +167,6 @@
                                 >
                             </div>
                         </div>
-
                         <!-- Actions -->
                         <div class="flex gap-2 pt-2">
                             <UButton
@@ -187,7 +192,6 @@
                                 Compare
                             </UButton>
                         </div>
-
                         <!-- Updated Date -->
                         <div class="text-xs text-gray-500 text-center">
                             Updated:
@@ -197,7 +201,17 @@
                 </UCard>
             </div>
         </div>
-
+        <!-- Pagination -->
+        <div v-if="filteredCars.length > 0" class="flex justify-center mt-6">
+            <UPagination
+                v-model:page="currentPage"
+                :total="filteredCars.length"
+                :items-per-page="ITEMS_PER_PAGE"
+                :show-controls="true"
+                :sibling-count="1"
+                show-edges
+            />
+        </div>
         <!-- Comparison Modal -->
         <UModal v-model:open="isComparisonOpen" title="Car Comparisons">
             <template #body>
@@ -212,262 +226,155 @@
 </template>
 
 <script setup lang="ts">
-import type { CarData, Filters } from "~/types";
+import type { CarData, Filters, CarsResponse, CarsResponseDetails } from "~/types";
 
-// Données de test
-const testCars: CarData[] = [
-    {
-        make: "CORVETTE",
-        model: "C8 Corvette Stingray Coupé Callaway Edition",
-        version: "Edition",
-        color: "schwarz",
-        mileage: 5000,
-        fuel_type: "Benzin",
-        updated_at: "2025-11-09T19:30:07.376215",
-        price_with_tax: 135000.0022,
-        year_from: 2025,
-        year_to: 2025,
-        car_url:
-            "https://auto-brass.com/decouvrir-les-occasions?freier_text=2990006",
-        price_with_no_tax: 113445.38,
-        id: "2990006",
-        lacentrale: true,
-        leboncoin: false,
-        comparisons: [
-            {
-                id: "1762713078_2990006",
-                link: "https://www.leboncoin.fr/voitures/2345678903.htm",
-                name: "CHEVROLET CORVETTE",
-                image: "https://img.leboncoin.fr/api/v1/lbcpb1/images/corvette123.jpg",
-                price: 125000,
-                domain: "https://www.leboncoin.fr/",
-                mileage: 8000,
-                deal_type: "GOOD_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "C8 Stingray Coupé",
-                parent_car_id: "2990006",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 88,
-                matching_percentage_reason:
-                    "Similar Corvette C8 model with comparable specifications and mileage.",
-            },
-            {
-                id: "1762713079_2990006",
-                link: "https://www.lacentrale.fr/auto-occasion-annonce-corvette456.html",
-                name: "CHEVROLET CORVETTE C8",
-                image: "https://pictures.lacentrale.fr/classifieds/corvette456_STANDARD_0.jpg",
-                price: 140000,
-                domain: "https://www.lacentrale.fr/",
-                mileage: 3000,
-                deal_type: "AVERAGE_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "C8 Stingray Z51",
-                parent_car_id: "2990006",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 92,
-                matching_percentage_reason:
-                    "Very similar Corvette C8 with lower mileage but higher trim level.",
-            },
-        ],
-        lowest_price: 0,
-        average_price: 0,
-        average_price_based_on_best_match: 0,
-        price_difference_with_avg_price: -135000.0022,
-        card_color: "red",
-        best_match_percentage: 0,
-        best_match_link: null,
-    },
-    {
-        make: "BMW",
-        model: "M3 Competition",
-        version: "G80",
-        color: "Alpine White",
-        mileage: 15000,
-        fuel_type: "Benzin",
-        updated_at: "2025-11-09T18:30:07.376215",
-        price_with_tax: 85000,
-        year_from: 2023,
-        year_to: 2023,
-        car_url:
-            "https://auto-brass.com/decouvrir-les-occasions?freier_text=2990007",
-        price_with_no_tax: 71428.57,
-        id: "2990007",
-        lacentrale: true,
-        leboncoin: true,
-        comparisons: [
-            {
-                id: "1762713077_9143559",
-                link: "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html",
-                name: "BMW M3",
-                image: "https://pictures.lacentrale.fr/classifieds/E116081536_STANDARD_0.jpg",
-                price: 82000,
-                domain: "https://www.lacentrale.fr/",
-                mileage: 18000,
-                deal_type: "GOOD_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "M3 Competition G80",
-                parent_car_id: "9143559",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 95,
-                matching_percentage_reason:
-                    "Very similar BMW M3 models with close mileage and specifications.",
-            },
-        ],
-        lowest_price: 82000,
-        average_price: 85000,
-        average_price_based_on_best_match: 83500,
-        price_difference_with_avg_price: 0,
-        card_color: "green",
-        best_match_percentage: 95,
-        best_match_link:
-            "https://www.lacentrale.fr/auto-occasion-annonce-69116222960.html",
-    },
-    {
-        make: "AUDI",
-        model: "RS6 Avant",
-        version: "C8",
-        color: "Nardo Grey",
-        mileage: 25000,
-        fuel_type: "Benzin",
-        updated_at: "2025-11-09T17:30:07.376215",
-        price_with_tax: 95000,
-        year_from: 2022,
-        year_to: 2022,
-        car_url:
-            "https://auto-brass.com/decouvrir-les-occasions?freier_text=2990008",
-        price_with_no_tax: 79831.93,
-        id: "2990008",
-        lacentrale: false,
-        leboncoin: true,
-        comparisons: [
-            {
-                id: "1762713080_2990008",
-                link: "https://www.lacentrale.fr/auto-occasion-annonce-audi789.html",
-                name: "AUDI RS6 AVANT",
-                image: "https://pictures.lacentrale.fr/classifieds/audi789_STANDARD_0.jpg",
-                price: 89000,
-                domain: "https://www.lacentrale.fr/",
-                mileage: 30000,
-                deal_type: "VERY_GOOD_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "RS6 Avant C8 Performance",
-                parent_car_id: "2990008",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 90,
-                matching_percentage_reason:
-                    "Excellent match for Audi RS6 Avant with similar specifications and competitive pricing.",
-            },
-            {
-                id: "1762713081_2990008",
-                link: "https://www.leboncoin.fr/voitures/2345678904.htm",
-                name: "AUDI RS6",
-                image: null,
-                price: 98000,
-                domain: "https://www.leboncoin.fr/",
-                mileage: 20000,
-                deal_type: "GOOD_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "RS6 Avant Quattro",
-                parent_car_id: "2990008",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 85,
-                matching_percentage_reason:
-                    "Good match for Audi RS6 with lower mileage but slightly higher price.",
-            },
-        ],
-        lowest_price: 0,
-        average_price: 0,
-        average_price_based_on_best_match: 0,
-        price_difference_with_avg_price: -95000,
-        card_color: "yellow",
-        best_match_percentage: 0,
-        best_match_link: null,
-    },
-    {
-        make: "PORSCHE",
-        model: "911 Turbo S",
-        version: "992",
-        color: "Guards Red",
-        mileage: 12000,
-        fuel_type: "Benzin",
-        updated_at: "2025-11-09T16:30:07.376215",
-        price_with_tax: 220000,
-        year_from: 2023,
-        year_to: 2023,
-        car_url:
-            "https://auto-brass.com/decouvrir-les-occasions?freier_text=2990009",
-        price_with_no_tax: 184873.95,
-        id: "2990009",
-        lacentrale: true,
-        leboncoin: true,
-        comparisons: [
-            {
-                id: "1762713082_2990009",
-                link: "https://www.lacentrale.fr/auto-occasion-annonce-porsche123.html",
-                name: "PORSCHE 911 TURBO S",
-                image: "https://pictures.lacentrale.fr/classifieds/porsche123_STANDARD_0.jpg",
-                price: 215000,
-                domain: "https://www.lacentrale.fr/",
-                mileage: 15000,
-                deal_type: "GOOD_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "911 Turbo S 992 PDK",
-                parent_car_id: "2990009",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 94,
-                matching_percentage_reason:
-                    "Excellent match for Porsche 911 Turbo S with very similar specifications and competitive pricing.",
-            },
-            {
-                id: "1762713083_2990009",
-                link: "https://www.leboncoin.fr/voitures/2345678905.htm",
-                name: "PORSCHE 911",
-                image: "https://img.leboncoin.fr/api/v1/lbcpb1/images/porsche456.jpg",
-                price: 230000,
-                domain: "https://www.leboncoin.fr/",
-                mileage: 8000,
-                deal_type: "AVERAGE_DEAL",
-                fuel_type: "BENZIN",
-                created_at: "2025-11-09T18:31:53.886335+00:00",
-                updated_at: "2025-11-09T19:30:23.451847",
-                car_metadata: "911 Turbo S Cabriolet",
-                parent_car_id: "2990009",
-                boite_de_vitesse: "AUTO",
-                matching_percentage: 87,
-                matching_percentage_reason:
-                    "Good match for Porsche 911 Turbo S, cabriolet version with lower mileage but higher price.",
-            },
-        ],
-        lowest_price: 215000,
-        average_price: 222500,
-        average_price_based_on_best_match: 217500,
-        price_difference_with_avg_price: -2500,
-        card_color: "green",
-        best_match_percentage: 94,
-        best_match_link:
-            "https://www.lacentrale.fr/auto-occasion-annonce-porsche123.html",
-    },
-];
+// Configuration
+const DEFAULT_LIMIT = 20;
+const ITEMS_PER_PAGE = 20;
+const DEFAULT_CUT_OFF_PRICE = 500;
+const DEFAULT_PERCENTAGE_LIMIT = 95;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 secondes entre les retries
 
-// Reactive data
+const route = useRoute();
+const cars = ref<CarData[]>([]);
+const isLoading = ref(false);
+const fetchError = ref<string | null>(null);
+const hasMounted = ref(false);
+const currentPage = ref(1);
+const total = ref(0);
+
+const activeDomain = computed(() => {
+    if (route.path === "/home" || route.path === "/") {
+        return null;
+    }
+    if (typeof route.params.domain === "string" && route.params.domain !== "home") {
+        return route.params.domain;
+    }
+    const segments = route.path.split("/").filter(Boolean);
+    return segments.length > 0 && segments[0] !== "home" ? segments[0] : null;
+});
+
 const filters = ref<Filters>({
     cutOffPrice: null,
     matchingPercent: null,
     name: "",
     model: "",
     deals: "",
+});
+
+const queryParams = computed(() => ({
+    cut_off_price:
+        filters.value.cutOffPrice ?? DEFAULT_CUT_OFF_PRICE,
+    percentage_limit:
+        filters.value.matchingPercent ?? DEFAULT_PERCENTAGE_LIMIT,
+}));
+
+async function fetchCars() {
+    isLoading.value = true;
+    fetchError.value = null;
+    cars.value = [];
+    
+    const limit = DEFAULT_LIMIT;
+    let offset = 0;
+    let consecutiveErrors = 0;
+    
+    try {
+        while (true) {
+            try {
+                const response = await $fetch<CarsResponse>("/api/cars", {
+                    query: {
+                        offset,
+                        limit,
+                        cut_off_price: queryParams.value.cut_off_price,
+                        percentage_limit: queryParams.value.percentage_limit,
+                        domain: activeDomain.value ?? undefined,
+                    },
+                });
+
+                consecutiveErrors = 0; // Reset consecutive errors on success
+
+                const detailsSource = Array.isArray(response.details)
+                    ? response.details
+                    : (response.details as CarsResponseDetails | undefined)?.data;
+
+                const responseDetails = Array.isArray(detailsSource)
+                    ? detailsSource
+                    : [];
+
+                if (!responseDetails.length) {
+                    break;
+                }
+
+                cars.value.push(...responseDetails);
+                
+                if (responseDetails.length < limit) {
+                    break;
+                }
+                
+                offset += limit;
+                
+            } catch (batchError: any) {
+                consecutiveErrors++;
+                
+                console.error('Request error:', {
+                    offset,
+                    status: batchError.status,
+                    statusCode: batchError.statusCode,
+                    statusMessage: batchError.statusMessage,
+                    message: batchError.message,
+                });
+                
+                // Si on a trop d'erreurs consécutives
+                if (consecutiveErrors >= MAX_RETRIES) {
+                    // Si on a déjà des données, c'est un succès partiel
+                    if (cars.value.length > 0) {
+                        fetchError.value = `Chargement partiel : ${cars.value.length} voitures chargées. Impossible de charger plus de données à partir de l'offset ${offset}.`;
+                        break;
+                    } else {
+                        throw batchError;
+                    }
+                }
+                
+                // Retry avec délai
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            }
+        }
+        
+        total.value = cars.value.length;
+        
+    } catch (error: any) {
+        fetchError.value =
+            error?.statusMessage || error?.message || "Échec du chargement des voitures";
+        
+        if (cars.value.length === 0) {
+            cars.value = [];
+            total.value = 0;
+        }
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+onMounted(async () => {
+    await fetchCars();
+    hasMounted.value = true;
+});
+
+watch(
+    () => [
+        queryParams.value.cut_off_price,
+        queryParams.value.percentage_limit,
+        activeDomain.value,
+    ],
+    async () => {
+        if (!hasMounted.value) return;
+        await fetchCars();
+    },
+);
+
+watch(currentPage, () => {
+    // No fetch, just update display
 });
 
 const dealOptions = [
@@ -480,35 +387,35 @@ const isComparisonOpen = ref(false);
 const selectedCar = ref<CarData | null>(null);
 
 const filteredCars = computed(() => {
-    let result = [...testCars];
-
+    let result = [...cars.value];
     if (filters.value.name) {
         result = result.filter((car) =>
             car.make.toLowerCase().includes(filters.value.name.toLowerCase()),
         );
     }
-
     if (filters.value.model) {
         result = result.filter((car) =>
             car.model.toLowerCase().includes(filters.value.model.toLowerCase()),
         );
     }
-
     if (filters.value.deals) {
         result = result.filter((car) => {
             const dealType = filters.value.deals;
-            console.log(dealType);
             if (dealType === "Best Deals") return car.card_color === "green";
             if (dealType === "Worst Deals") return car.card_color === "red";
             if (dealType === "Not Bad") return car.card_color === "yellow";
             return true;
         });
     }
-
     return result;
 });
 
-// Methodes de reset
+const paginatedCars = computed(() => {
+    const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return filteredCars.value.slice(start, end);
+});
+
 function resetFilters() {
     filters.value = {
         cutOffPrice: null,
