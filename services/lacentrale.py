@@ -29,13 +29,10 @@ headers = {
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-site",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
     "X-Client-Source": "lc:recherche:front",
-    "sec-ch-ua": '"Chromium";v="139", "Not;A=Brand";v="99"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Linux"',
     "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
-    "x-datadome-clientid": "JNb4_NnyXOPwiOJwcbNxzYFyV5P6ogS9zCktTxOPqCYHxenbeztrym0r~4HQfIa_0Pf4JW47T8VtWdYD5NAQ3uDeTI0bkCW9TheskiGTX4~dGjNrNmYgxp9nKn_4XLjm",
+    "x-datadome-clientid": "a4q2j0iqtiMWoIo_33on6d_RQf8ceLbhqLzvKLjqvF4gqwh7LU5YDzmFcmAUJyU1Hu6B8zQZInuNms0GYqbMp_DkpDwToSvCrx8D_9V0lkbHk3zruN0A0PEKFkmfdj9m",
 }
 params = {
     "aggregations": "EXTERNAL_COLOR,MAKE_MODEL_COMMERCIAL_NAME,VERSION",
