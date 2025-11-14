@@ -7,7 +7,6 @@
             </template>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div>{{ filters }}</div>
                 <UFormField label="Cut Off Price">
                     <UInput
                         v-model="filters.cutOffPrice"
@@ -200,25 +199,13 @@
         </div>
 
         <!-- Comparison Modal -->
-        <UModal v-model="isComparisonOpen">
-            <template #content>
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Car Comparisons</h3>
-                        <UButton
-                            icon="i-heroicons-x-mark"
-                            variant="ghost"
-                            size="sm"
-                            @click="isComparisonOpen = false"
-                        />
-                    </div>
-
-                    <ComparisonCards
-                        v-if="selectedCar"
-                        :comparisons="selectedCar.comparisons"
-                        :slug="`${selectedCar.make} ${selectedCar.model}`"
-                    />
-                </div>
+        <UModal v-model:open="isComparisonOpen" title="Car Comparisons">
+            <template #body>
+                <ComparisonCards
+                    v-if="selectedCar"
+                    :comparisons="selectedCar.comparisons"
+                    :slug="`${selectedCar.make} ${selectedCar.model}`"
+                />
             </template>
         </UModal>
     </div>
@@ -246,7 +233,46 @@ const testCars: CarData[] = [
         id: "2990006",
         lacentrale: true,
         leboncoin: false,
-        comparisons: [],
+        comparisons: [
+            {
+                id: "1762713078_2990006",
+                link: "https://www.leboncoin.fr/voitures/2345678903.htm",
+                name: "CHEVROLET CORVETTE",
+                image: "https://img.leboncoin.fr/api/v1/lbcpb1/images/corvette123.jpg",
+                price: 125000,
+                domain: "https://www.leboncoin.fr/",
+                mileage: 8000,
+                deal_type: "GOOD_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "C8 Stingray Coupé",
+                parent_car_id: "2990006",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 88,
+                matching_percentage_reason:
+                    "Similar Corvette C8 model with comparable specifications and mileage.",
+            },
+            {
+                id: "1762713079_2990006",
+                link: "https://www.lacentrale.fr/auto-occasion-annonce-corvette456.html",
+                name: "CHEVROLET CORVETTE C8",
+                image: "https://pictures.lacentrale.fr/classifieds/corvette456_STANDARD_0.jpg",
+                price: 140000,
+                domain: "https://www.lacentrale.fr/",
+                mileage: 3000,
+                deal_type: "AVERAGE_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "C8 Stingray Z51",
+                parent_car_id: "2990006",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 92,
+                matching_percentage_reason:
+                    "Very similar Corvette C8 with lower mileage but higher trim level.",
+            },
+        ],
         lowest_price: 0,
         average_price: 0,
         average_price_based_on_best_match: 0,
@@ -319,7 +345,46 @@ const testCars: CarData[] = [
         id: "2990008",
         lacentrale: false,
         leboncoin: true,
-        comparisons: [],
+        comparisons: [
+            {
+                id: "1762713080_2990008",
+                link: "https://www.lacentrale.fr/auto-occasion-annonce-audi789.html",
+                name: "AUDI RS6 AVANT",
+                image: "https://pictures.lacentrale.fr/classifieds/audi789_STANDARD_0.jpg",
+                price: 89000,
+                domain: "https://www.lacentrale.fr/",
+                mileage: 30000,
+                deal_type: "VERY_GOOD_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "RS6 Avant C8 Performance",
+                parent_car_id: "2990008",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 90,
+                matching_percentage_reason:
+                    "Excellent match for Audi RS6 Avant with similar specifications and competitive pricing.",
+            },
+            {
+                id: "1762713081_2990008",
+                link: "https://www.leboncoin.fr/voitures/2345678904.htm",
+                name: "AUDI RS6",
+                image: null,
+                price: 98000,
+                domain: "https://www.leboncoin.fr/",
+                mileage: 20000,
+                deal_type: "GOOD_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "RS6 Avant Quattro",
+                parent_car_id: "2990008",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 85,
+                matching_percentage_reason:
+                    "Good match for Audi RS6 with lower mileage but slightly higher price.",
+            },
+        ],
         lowest_price: 0,
         average_price: 0,
         average_price_based_on_best_match: 0,
@@ -327,6 +392,72 @@ const testCars: CarData[] = [
         card_color: "yellow",
         best_match_percentage: 0,
         best_match_link: null,
+    },
+    {
+        make: "PORSCHE",
+        model: "911 Turbo S",
+        version: "992",
+        color: "Guards Red",
+        mileage: 12000,
+        fuel_type: "Benzin",
+        updated_at: "2025-11-09T16:30:07.376215",
+        price_with_tax: 220000,
+        year_from: 2023,
+        year_to: 2023,
+        car_url:
+            "https://auto-brass.com/decouvrir-les-occasions?freier_text=2990009",
+        price_with_no_tax: 184873.95,
+        id: "2990009",
+        lacentrale: true,
+        leboncoin: true,
+        comparisons: [
+            {
+                id: "1762713082_2990009",
+                link: "https://www.lacentrale.fr/auto-occasion-annonce-porsche123.html",
+                name: "PORSCHE 911 TURBO S",
+                image: "https://pictures.lacentrale.fr/classifieds/porsche123_STANDARD_0.jpg",
+                price: 215000,
+                domain: "https://www.lacentrale.fr/",
+                mileage: 15000,
+                deal_type: "GOOD_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "911 Turbo S 992 PDK",
+                parent_car_id: "2990009",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 94,
+                matching_percentage_reason:
+                    "Excellent match for Porsche 911 Turbo S with very similar specifications and competitive pricing.",
+            },
+            {
+                id: "1762713083_2990009",
+                link: "https://www.leboncoin.fr/voitures/2345678905.htm",
+                name: "PORSCHE 911",
+                image: "https://img.leboncoin.fr/api/v1/lbcpb1/images/porsche456.jpg",
+                price: 230000,
+                domain: "https://www.leboncoin.fr/",
+                mileage: 8000,
+                deal_type: "AVERAGE_DEAL",
+                fuel_type: "BENZIN",
+                created_at: "2025-11-09T18:31:53.886335+00:00",
+                updated_at: "2025-11-09T19:30:23.451847",
+                car_metadata: "911 Turbo S Cabriolet",
+                parent_car_id: "2990009",
+                boite_de_vitesse: "AUTO",
+                matching_percentage: 87,
+                matching_percentage_reason:
+                    "Good match for Porsche 911 Turbo S, cabriolet version with lower mileage but higher price.",
+            },
+        ],
+        lowest_price: 215000,
+        average_price: 222500,
+        average_price_based_on_best_match: 217500,
+        price_difference_with_avg_price: -2500,
+        card_color: "green",
+        best_match_percentage: 94,
+        best_match_link:
+            "https://www.lacentrale.fr/auto-occasion-annonce-porsche123.html",
     },
 ];
 
