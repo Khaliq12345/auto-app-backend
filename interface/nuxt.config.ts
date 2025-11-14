@@ -4,4 +4,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
   modules: [ "@nuxt/ui", "@nuxt/fonts"],
+  runtimeConfig: {
+    public: {
+      backendUrl: 'http://127.0.0.1:5000'
+    }
+  }
 });
