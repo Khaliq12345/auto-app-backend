@@ -151,9 +151,6 @@ const props = withDefaults(defineProps<Props>(), {
   domain: undefined,
 });
 
-// Use composables
-const { cars, isLoading, fetchError } = useCarFetching(props.domain);
-
 // Filters
 const filters = ref({
     cutOffPrice: null as number | null,
@@ -163,8 +160,39 @@ const filters = ref({
     deals: "",
 });
 
+// Use composables
+const {
+  cars,
+  isLoading,
+  fetchError,
+  fetchCars,
+  hasMounted,
+  setCutOffPrice,
+  setPercentageLimit,
+} = useCarFetching({
+  domain: props.domain,
+  cutOffPrice: filters.value.cutOffPrice ?? undefined,
+  percentageLimit: filters.value.matchingPercent ?? undefined,
+});
+
+// Assure la synchronisation des paramètres de requête côté composable et relance un fetch après le premier montage
+const queryParams = computed(() => {
+  const cutOff = filters.value.cutOffPrice ?? undefined;
+  const percentage = filters.value.matchingPercent ?? undefined;
+
+  setCutOffPrice(cutOff);
+  setPercentageLimit(percentage);
+
+  if (hasMounted.value) {
+    fetchCars();
+  }
+
+  return { cutOff, percentage };
+});
+
 // Computed
 const filteredCars = computed(() => {
+    queryParams.value;
     let result = [...cars.value];
     if (filters.value.name) {
         result = result.filter((car) =>
