@@ -49,7 +49,6 @@ export interface Filters {
   name: string;
   model: string;
   deals: string;
-  type: string;
 }
 
 export interface ScrapingStatus {
