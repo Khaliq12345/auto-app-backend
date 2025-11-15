@@ -1,5 +1,8 @@
 <template>
     <div class="space-y-6">
+        <div v-if="slug" class="text-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ slug }}</h3>
+        </div>
         <ComparisonCard
             v-if="groupedData.lacentrale.length > 0"
             :comparisons="groupedData.lacentrale"
@@ -19,6 +22,7 @@ import type { ComparisonItem, GroupedComparisons } from "~/types";
 
 interface Props {
     comparisons: ComparisonItem[];
+    slug?: string;
 }
 
 const props = defineProps<Props>();
