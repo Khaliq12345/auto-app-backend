@@ -1,10 +1,28 @@
 import type { CarData, CarsResponse, CarsResponseDetails } from "~/types";
 
-export function useCarFetching(domain?: string) {
+interface UseCarFetchingOptions {
+  domain?: string;
+  limit?: number;
+  cutOffPrice?: number | null | undefined;
+  percentageLimit?: number | null | undefined;
+}
+
+export function useCarFetching(options: UseCarFetchingOptions = {}) {
   // Configuration
   const DEFAULT_LIMIT = 20;
+  const DEFAULT_CUT_OFF_PRICE = 500;
+  const DEFAULT_PERCENTAGE_LIMIT = 95;
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
+
+  const limit = ref(options.limit ?? DEFAULT_LIMIT);
+  const cutOffPrice = ref<number | null | undefined>(
+    options.cutOffPrice ?? DEFAULT_CUT_OFF_PRICE,
+  );
+  const percentageLimit = ref<number | null | undefined>(
+    options.percentageLimit ?? DEFAULT_PERCENTAGE_LIMIT,
+  );
+  const domain = options.domain;
 
   // Reactive state
   const cars = ref<CarData[]>([]);
@@ -19,7 +37,7 @@ export function useCarFetching(domain?: string) {
     fetchError.value = null;
     cars.value = [];
 
-    const limit = DEFAULT_LIMIT;
+    const currentLimit = limit.value ?? DEFAULT_LIMIT;
     let offset = 0;
     let consecutiveErrors = 0;
 
@@ -29,9 +47,9 @@ export function useCarFetching(domain?: string) {
           const response = await $fetch<CarsResponse>("/api/cars", {
             query: {
               offset,
-              limit,
-              cut_off_price: 500,
-              percentage_limit: 95,
+              limit: currentLimit,
+              cut_off_price: cutOffPrice.value ?? undefined,
+              percentage_limit: percentageLimit.value ?? undefined,
               domain: domain ?? undefined,
             },
           });
@@ -52,11 +70,11 @@ export function useCarFetching(domain?: string) {
 
           cars.value.push(...responseDetails);
 
-          if (responseDetails.length < limit) {
+          if (responseDetails.length < currentLimit) {
             break;
           }
 
-          offset += limit;
+          offset += currentLimit;
         } catch (batchError: any) {
           consecutiveErrors++;
 
@@ -97,6 +115,18 @@ export function useCarFetching(domain?: string) {
     }
   }
 
+  function setCutOffPrice(value: number | null | undefined) {
+    cutOffPrice.value = value;
+  }
+
+  function setPercentageLimit(value: number | null | undefined) {
+    percentageLimit.value = value;
+  }
+
+  function setLimit(value: number | null | undefined) {
+    limit.value = value ?? DEFAULT_LIMIT;
+  }
+
   // Lifecycle
   onMounted(async () => {
     await fetchCars();
@@ -109,5 +139,12 @@ export function useCarFetching(domain?: string) {
     fetchError,
     total,
     fetchCars,
+    hasMounted,
+    limit,
+    cutOffPrice,
+    percentageLimit,
+    setCutOffPrice,
+    setPercentageLimit,
+    setLimit,
   };
 }
