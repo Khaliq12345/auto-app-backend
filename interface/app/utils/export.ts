@@ -84,7 +84,6 @@ export function exportToCSV(
 
 export function exportBestDeals(cars: CarData[]) {
   const filteredCars = getFilteredCars(cars, "best");
-  console.log("CARS ", filteredCars);
   const sanitizedCars = filteredCars.map(sanitizeCar);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
   const filename = `best-deals-${timestamp}.csv`;
