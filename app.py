@@ -222,8 +222,7 @@ def get_all_cars(
         stmt = (
             client.table("Vehicles")
             .select("*, comparisons(*)", count=CountMethod.exact)
-            .limit(limit)
-            .offset(offset)
+            .range(offset, offset + limit - 1)
             .order(
                 "matching_percentage",
                 desc=True,

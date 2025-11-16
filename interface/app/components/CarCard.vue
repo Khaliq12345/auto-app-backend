@@ -56,6 +56,16 @@
                         €{{ car.price_with_no_tax?.toLocaleString() }}
                     </span>
                 </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600"
+                        >Best Match Avg Price:</span
+                    >
+                    <span class="font-medium">
+                        €{{
+                            car.average_price_based_on_best_match?.toLocaleString()
+                        }}
+                    </span>
+                </div>
             </div>
 
             <!-- Match Information -->

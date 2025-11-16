@@ -3,17 +3,14 @@ import type { CarData } from "~/types";
 
 export function getFilteredCars(
   cars: CarData[],
-  filters: { matchingPercent: number | null },
   state: "all" | "best",
-  defaultThreshold: number = 95,
 ): CarData[] {
   if (state === "all") {
     return cars;
   }
 
   // Filter cars based on matching percentage threshold
-  const threshold = filters.matchingPercent ?? defaultThreshold;
-  return cars.filter((car) => car.best_match_percentage >= threshold);
+  return cars.filter((car) => car.card_color === "green");
 }
 
 type CsvPrimitive = string | number | boolean | null;
@@ -85,12 +82,9 @@ export function exportToCSV(
   document.body.removeChild(link);
 }
 
-export function exportBestDeals(
-  cars: CarData[],
-  filters: { matchingPercent: number | null },
-  defaultThreshold: number = 95,
-) {
-  const filteredCars = getFilteredCars(cars, filters, "best", defaultThreshold);
+export function exportBestDeals(cars: CarData[]) {
+  const filteredCars = getFilteredCars(cars, "best");
+  console.log("CARS ", filteredCars);
   const sanitizedCars = filteredCars.map(sanitizeCar);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
   const filename = `best-deals-${timestamp}.csv`;
@@ -98,7 +92,7 @@ export function exportBestDeals(
 }
 
 export function exportAllDeals(cars: CarData[]) {
-  const filteredCars = getFilteredCars(cars, { matchingPercent: null }, "all");
+  const filteredCars = getFilteredCars(cars, "all");
   const sanitizedCars = filteredCars.map(sanitizeCar);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
   const filename = `all-deals-${timestamp}.csv`;

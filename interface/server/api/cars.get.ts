@@ -2,7 +2,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const query = getQuery(event) as Record<string, any>;
 
-  const backendUrl = config.public.backendUrl || 'http://127.0.0.1:5000';
+  const backendUrl = config.public.backendUrl || "http://127.0.0.1:5000";
   const apiUrl = `${backendUrl}/get_all_cars`;
 
   try {
@@ -14,19 +14,15 @@ export default defineEventHandler(async (event) => {
       query: query,
       // IMPORTANT: Augmenter le timeout à 2 minutes
       timeout: 120000, // 120 secondes = 2 minutes
-      
-      // Ajouter retry en cas d'erreur réseau
-      retry: 2,
-      retryDelay: 1000,
-      
+
       // Désactiver la validation du statut pour gérer nous-mêmes
       onResponseError({ response }) {
         // Error handled in catch block
       },
-      
+
       onRequestError({ error }) {
         // Error handled in catch block
-      }
+      },
     });
 
     return response;
@@ -61,7 +57,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Erreur de timeout
-    if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
+    if (error.message?.includes("timeout") || error.code === "ETIMEDOUT") {
       throw createError({
         statusCode: 504,
         statusMessage: "Request timeout - backend took too long to respond",

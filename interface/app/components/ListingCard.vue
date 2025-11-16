@@ -7,22 +7,28 @@
             </template>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <UFormField label="Cut Off Price">
-                    <UInput
-                        v-model="filters.cutOffPrice"
-                        type="number"
-                        placeholder="Enter price"
-                        icon="i-heroicons-currency-euro"
-                    />
+                    <div class="flex gap-2">
+                        <UInput
+                            v-model="filters.cutOffPrice"
+                            type="number"
+                            placeholder="Enter price"
+                            icon="i-heroicons-currency-euro"
+                        />
+                        <UButton size="sm" @click="getCars()">Reload</UButton>
+                    </div>
                 </UFormField>
                 <UFormField label="Matching Percent">
-                    <UInput
-                        v-model="filters.matchingPercent"
-                        type="number"
-                        placeholder="Enter percentage"
-                        icon="i-heroicons-chart-bar"
-                        min="0"
-                        max="100"
-                    />
+                    <div class="flex gap-2">
+                        <UInput
+                            v-model="filters.matchingPercent"
+                            type="number"
+                            placeholder="Enter percentage"
+                            icon="i-heroicons-chart-bar"
+                            min="0"
+                            max="100"
+                        />
+                        <UButton size="sm" @click="getCars()">Reload</UButton>
+                    </div>
                 </UFormField>
                 <UFormField label="Name">
                     <UInput
@@ -48,36 +54,30 @@
                 </UFormField>
             </div>
             <template #footer>
-                <div class="flex justify-end gap-2">
+                <div class="flex gap-4">
                     <UButton variant="outline" @click="resetFilters">
                         Reset
                     </UButton>
+                    <UButton
+                        @click="exportBestDealsHandler"
+                        variant="solid"
+                        color="success"
+                        icon="i-heroicons-arrow-down-tray"
+                        :disabled="cars.length === 0"
+                    >
+                        Export Best Deals
+                    </UButton>
+                    <UButton
+                        @click="exportAllDealsHandler"
+                        variant="solid"
+                        color="primary"
+                        icon="i-heroicons-arrow-down-tray"
+                        :disabled="cars.length === 0"
+                    >
+                        Export All Deals
+                    </UButton>
                 </div>
             </template>
-        </UCard>
-
-        <!-- Export Section -->
-        <UCard class="p-4">
-            <div class="flex gap-4">
-                <UButton
-                    @click="exportBestDealsHandler"
-                    variant="solid"
-                    color="success"
-                    icon="i-heroicons-arrow-down-tray"
-                    :disabled="cars.length === 0"
-                >
-                    Export Best Deals
-                </UButton>
-                <UButton
-                    @click="exportAllDealsHandler"
-                    variant="solid"
-                    color="primary"
-                    icon="i-heroicons-arrow-down-tray"
-                    :disabled="cars.length === 0"
-                >
-                    Export All Deals
-                </UButton>
-            </div>
         </UCard>
 
         <!-- Cars Section -->
@@ -95,14 +95,11 @@
             >
                 {{ fetchError }}
             </UAlert>
-            <UAlert
-                v-else-if="isLoading"
-                color="info"
-                variant="soft"
-                icon="i-heroicons-arrow-path"
+
+            <UBadge size="xl">{{ offset }} Cars Loaded</UBadge>
+            <UProgress animation="swing" v-if="isLoading"
+                >Chargement des voitures...</UProgress
             >
-                Chargement des voitures... ({{ cars.length }} chargées)
-            </UAlert>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <CarCard
                     v-for="car in paginatedCars"
@@ -112,17 +109,19 @@
                 />
             </div>
         </div>
+
         <!-- Pagination -->
         <div v-if="filteredCars.length > 0" class="flex justify-center mt-6">
             <UPagination
                 v-model:page="currentPage"
                 :total="filteredCars.length"
-                :items-per-page="ITEMS_PER_PAGE"
+                :items-per-page="20"
                 :show-controls="true"
                 :sibling-count="1"
                 show-edges
             />
         </div>
+
         <!-- Comparison Modal -->
         <UModal v-model:open="isComparisonOpen" title="Car Comparisons">
             <template #body>
@@ -137,62 +136,30 @@
 </template>
 
 <script setup lang="ts">
-import type { CarData } from "~/types";
+import type { CarData, CarsResponse, CarsResponseDetails } from "~/types";
 
-// Configuration
-const ITEMS_PER_PAGE = 20;
-const DEFAULT_PERCENTAGE_LIMIT = 95;
+const props = defineProps<{
+    domain: string | undefined;
+}>();
 
-interface Props {
-  domain?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  domain: undefined,
-});
+const cars = ref([]);
+const fetchError = ref();
+const isLoading = ref(false);
+const limit = ref(20);
+const offset = ref(0);
 
 // Filters
 const filters = ref({
-    cutOffPrice: null as number | null,
-    matchingPercent: null as number | null,
+    cutOffPrice: 500,
+    matchingPercent: 95,
     name: "",
     model: "",
     deals: "",
 });
 
-// Use composables
-const {
-  cars,
-  isLoading,
-  fetchError,
-  fetchCars,
-  hasMounted,
-  setCutOffPrice,
-  setPercentageLimit,
-} = useCarFetching({
-  domain: props.domain,
-  cutOffPrice: filters.value.cutOffPrice ?? undefined,
-  percentageLimit: filters.value.matchingPercent ?? undefined,
-});
-
-// Assure la synchronisation des paramètres de requête côté composable et relance un fetch après le premier montage
-const queryParams = computed(() => {
-  const cutOff = filters.value.cutOffPrice ?? undefined;
-  const percentage = filters.value.matchingPercent ?? undefined;
-
-  setCutOffPrice(cutOff);
-  setPercentageLimit(percentage);
-
-  if (hasMounted.value) {
-    fetchCars();
-  }
-
-  return { cutOff, percentage };
-});
-
 // Computed
 const filteredCars = computed(() => {
-    queryParams.value;
+    currentPage.value = 1;
     let result = [...cars.value];
     if (filters.value.name) {
         result = result.filter((car) =>
@@ -221,8 +188,8 @@ const currentPage = ref(1);
 
 // Computed
 const paginatedCars = computed(() => {
-    const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
+    const start = (currentPage.value - 1) * 20;
+    const end = start + 20;
     return filteredCars.value.slice(start, end);
 });
 
@@ -239,9 +206,10 @@ const dealOptions = [
 
 // Methods
 function resetFilters() {
+    currentPage.value = 1;
     filters.value = {
-        cutOffPrice: null,
-        matchingPercent: null,
+        cutOffPrice: 500,
+        matchingPercent: 95,
         name: "",
         model: "",
         deals: "",
@@ -254,10 +222,70 @@ function openComparison(car: CarData) {
 }
 
 function exportBestDealsHandler() {
-    exportBestDeals(cars.value, filters.value, DEFAULT_PERCENTAGE_LIMIT);
+    exportBestDeals(cars.value);
 }
 
 function exportAllDealsHandler() {
     exportAllDeals(cars.value);
 }
+
+async function getCars() {
+    cars.value = [];
+    isLoading.value = true;
+    let retries = 0;
+    offset.value = 0;
+    while (true) {
+        if (retries === 5) {
+            isLoading.value = false;
+            break;
+        }
+        console.log("offset - ", offset.value);
+        try {
+            const response = await $fetch<CarsResponse>("/api/cars", {
+                query: {
+                    offset: offset.value,
+                    limit: limit.value,
+                    cut_off_price: filters.value.cutOffPrice,
+                    percentage_limit: filters.value.matchingPercent,
+                    domain: props.domain,
+                },
+            });
+            console.log(response);
+
+            const detailsSource = Array.isArray(response.details)
+                ? response.details
+                : (response.details as CarsResponseDetails | undefined)?.data;
+
+            const responseDetails = Array.isArray(detailsSource)
+                ? detailsSource
+                : [];
+
+            if (!responseDetails.length) {
+                break;
+            }
+
+            cars.value.push(...responseDetails);
+
+            if (responseDetails.length < limit) {
+                break;
+            }
+
+            offset.value += limit.value;
+            retries = 0;
+        } catch (err) {
+            console.log(err);
+            retries += 1;
+            break;
+        }
+    }
+
+    isLoading.value = false;
+    return cars;
+}
+
+onMounted(async () => {
+    isLoading.value = true;
+    console.log("Starting...");
+    await getCars();
+});
 </script>
