@@ -23,6 +23,7 @@ from supabase import (
     Client,
     create_client,
 )
+from supabase.lib.client_options import SyncClientOptions
 
 from config import config
 from services import autoscout24, lacentrale, leboncoin
@@ -61,6 +62,7 @@ def get_session() -> Client:
     client: Client = create_client(
         supabase_key=utils.supabase_key,
         supabase_url=utils.url,
+        options=SyncClientOptions(postgrest_client_timeout=60000),
     )
     return client
 
@@ -205,24 +207,19 @@ def login(
 
 @app.get("/get_all_cars")
 def get_all_cars(
-    # access_token: str,
-    # refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
     offset: int = 0,
     limit: int = 20,
     cut_off_price: int = 500,
     domain: str | None = None,
     percentage_limit: int = 95,
 ):
+    client = get_session()
     try:
-        # auth = client.auth.set_session(
-        #     access_token=access_token,
-        #     refresh_token=refresh_token,
-        # )
         stmt = (
             client.table("Vehicles")
             .select("*, comparisons(*)", count=CountMethod.exact)
-            .range(offset, offset + limit - 1)
+            .offset(offset)
+            .limit(limit)
             .order(
                 "matching_percentage",
                 desc=True,
@@ -283,16 +280,9 @@ def get_all_cars(
 
 
 @app.get("/scrape_status")
-def get_status(
-    # access_token: str,
-    # refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
-):
+def get_status():
     try:
-        # auth = client.auth.set_session(
-        #     access_token=access_token,
-        #     refresh_token=refresh_token,
-        # )
+        client = get_session()
         response = client.table("Status").select("*").execute()
         return {
             # "session": jsonable_encoder(auth),
