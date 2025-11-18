@@ -45,7 +45,7 @@
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm text-gray-600">Price with tax:</span>
                     <span class="font-bold text-lg">
-                        €{{ car.price_with_tax?.toLocaleString() }}
+                        €{{ car.price_with_tax?.toFixed() }}
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
@@ -53,7 +53,7 @@
                         >Price without tax:</span
                     >
                     <span class="font-medium">
-                        €{{ car.price_with_no_tax?.toLocaleString() }}
+                        €{{ car.price_with_no_tax?.toFixed() }}
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
@@ -61,9 +61,15 @@
                         >Best Match Avg Price:</span
                     >
                     <span class="font-medium">
-                        €{{
-                            car.average_price_based_on_best_match?.toLocaleString()
-                        }}
+                        €{{ car.average_price_based_on_best_match?.toFixed() }}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600"
+                        >Price Difference With Average Price:</span
+                    >
+                    <span class="font-medium">
+                        €{{ car.price_difference_with_avg_price?.toFixed() }}
                     </span>
                 </div>
             </div>
@@ -82,9 +88,10 @@
             </div>
 
             <!-- Actions -->
+            <p>{{ car.id }}</p>
             <div class="flex gap-2 pt-2">
                 <UButton
-                    :to="car.car_url"
+                    :to="`https://auto-brass.com/decouvrir-les-occasions/?text_search=${car.id}`"
                     target="_blank"
                     variant="outline"
                     size="sm"
