@@ -233,6 +233,7 @@ async function getCars() {
     cars.value = [];
     isLoading.value = true;
     let retries = 0;
+    cursor.value = undefined;
     while (true) {
         console.log(`Starting with cursor - ${cursor.value}`);
         if (retries === 5) {
