@@ -2,7 +2,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const query = getQuery(event) as Record<string, any>;
 
-  const backendUrl = config.public.backendUrl || "http://127.0.0.1:8500";
+  const backendUrl = "http://127.0.0.1:8500";
   const apiUrl = `${backendUrl}/get_all_cars`;
 
   try {
