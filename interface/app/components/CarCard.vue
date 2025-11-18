@@ -88,7 +88,6 @@
             </div>
 
             <!-- Actions -->
-            <p>{{ car.id }}</p>
             <div class="flex gap-2 pt-2">
                 <UButton
                     :to="`https://auto-brass.com/decouvrir-les-occasions/?text_search=${car.id}`"
