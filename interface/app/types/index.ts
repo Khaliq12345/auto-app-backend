@@ -57,9 +57,10 @@ export interface CarsResponseDetails {
 }
 
 export interface CarsResponse {
-  session?: unknown;
   details: CarsResponseDetails | CarData[];
   total?: number;
+  next_cursor: string | null;
+  has_more: true;
 }
 
 export interface ScrapingStatus {

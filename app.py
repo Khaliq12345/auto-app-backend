@@ -207,29 +207,39 @@ def login(
 
 @app.get("/get_all_cars")
 def get_all_cars(
-    offset: int = 0,
     limit: int = 20,
+    cursor: int | None = None,  # Changed from offset to cursor
     cut_off_price: int = 500,
     domain: str | None = None,
     percentage_limit: int = 95,
 ):
     client = get_session()
     try:
+        # Base query
         stmt = (
             client.table("Vehicles")
             .select("*, comparisons(*)", count=CountMethod.exact)
-            .offset(offset)
             .limit(limit)
+            .order("id")  # Primary sort by ID for cursor
             .order(
                 "matching_percentage",
                 desc=True,
                 foreign_table="comparisons",
             )
         )
+
+        # Apply cursor if provided (for subsequent pages)
+        if cursor is not None:
+            stmt = stmt.gt("id", cursor)
+
+        # Apply domain filter if provided
         if domain:
             stmt = stmt.eq("comparisons.domain", domain)
+
         response = stmt.execute()
         vehicles = []
+        next_cursor = None
+
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
             comparison_prices = [0] if not comparison_prices else comparison_prices
@@ -243,7 +253,6 @@ def get_all_cars(
             vehicle["price_difference_with_avg_price"] = (
                 avg_price - vehicle["price_with_tax"]
             )
-
             if vehicle["price_with_tax"] < avg_price:
                 vehicle["card_color"] = "green"
             elif abs(vehicle["price_with_tax"] - avg_price) >= cut_off_price:
@@ -263,12 +272,17 @@ def get_all_cars(
                     "matching_percentage"
                 )
                 vehicle["best_match_link"] = best_match_car.get("link")
+            vehicles.append(vehicle)
 
-            vehicles.append(vehicle)  # 2091556
+        # Set next cursor to the last vehicle's ID
+        if vehicles:
+            next_cursor = vehicles[-1]["id"]
+
         return {
-            # "session": jsonable_encoder(auth),
             "details": jsonable_encoder(vehicles),
             "total": response.count,
+            "next_cursor": next_cursor,  # Return cursor for next page
+            "has_more": len(vehicles) == limit,  # Indicate if more pages exist
         }
     except AuthApiError:
         raise HTTPException(

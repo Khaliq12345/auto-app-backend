@@ -96,7 +96,7 @@
                 {{ fetchError }}
             </UAlert>
 
-            <UBadge size="xl">{{ offset }} Cars Loaded</UBadge>
+            <UBadge size="xl">Loading from Car - {{ cursor }} </UBadge>
             <UProgress animation="swing" v-if="isLoading"
                 >Chargement des voitures...</UProgress
             >
@@ -145,8 +145,8 @@ const props = defineProps<{
 const cars = ref([]);
 const fetchError = ref();
 const isLoading = ref(false);
-const limit = ref(20);
-const offset = ref(0);
+const limit = ref(100);
+const cursor = ref(undefined);
 
 // Filters
 const filters = ref({
@@ -233,17 +233,16 @@ async function getCars() {
     cars.value = [];
     isLoading.value = true;
     let retries = 0;
-    offset.value = 0;
     while (true) {
+        console.log(`Starting with cursor - ${cursor.value}`);
         if (retries === 5) {
             isLoading.value = false;
             break;
         }
-        console.log("offset - ", offset.value);
         try {
             const response = await $fetch<CarsResponse>("/api/cars", {
                 query: {
-                    offset: offset.value,
+                    cursor: cursor.value,
                     limit: limit.value,
                     cut_off_price: filters.value.cutOffPrice,
                     percentage_limit: filters.value.matchingPercent,
@@ -270,7 +269,7 @@ async function getCars() {
                 break;
             }
 
-            offset.value += limit.value;
+            cursor.value = response.next_cursor;
             retries = 0;
         } catch (err) {
             console.log(err);
