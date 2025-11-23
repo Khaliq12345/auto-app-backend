@@ -139,7 +139,10 @@ def save_to_db(data: dict | list[dict], table: str):
             supabase_key=supabase_key,
             supabase_url=url,
         )
-        client.table(table).insert(data).execute()
+        try:
+            client.table(table).insert(data).execute()
+        except Exception as _:
+            client.table(table).update(data).eq("id", data["id"]).execute()
         return True
     except Exception as e:
         print(f"Saving Error - {e}")

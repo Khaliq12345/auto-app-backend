@@ -1,19 +1,14 @@
-import os
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Annotated, Optional, Union
 
-import aiofiles
 import pandas as pd
 from fastapi import (
-    BackgroundTasks,
     Depends,
     FastAPI,
     HTTPException,
-    UploadFile,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -316,7 +311,7 @@ if __name__ == "__main__":
         10000,
         dev=False,
         ignore_old=True,
-        sites_to_scrape=["lacentrale"],
+        sites_to_scrape=["leboncoin"],
         car_id=None,
     )
 
