@@ -23,6 +23,10 @@
                     <p class="font-medium">{{ car.color }}</p>
                 </div>
                 <div>
+                    <span class="text-gray-600">Car ID:</span>
+                    <p class="font-medium">{{ car.id }}</p>
+                </div>
+                <div>
                     <span class="text-gray-600">Mileage:</span>
                     <p class="font-medium">
                         {{ car.mileage?.toLocaleString() }} km
