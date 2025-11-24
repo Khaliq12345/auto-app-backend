@@ -52,6 +52,14 @@
                         icon="i-heroicons-star"
                     />
                 </UFormField>
+                <UFormField label="Order By Price Difference">
+                    <USelect
+                        v-model="filters.order"
+                        :items="['asc', 'desc']"
+                        placeholder="Select Order"
+                        icon="i-heroicons-list-ordered"
+                    />
+                </UFormField>
             </div>
             <template #footer>
                 <div class="flex gap-4">
@@ -155,6 +163,7 @@ const filters = ref({
     name: "",
     model: "",
     deals: "",
+    order: "desc",
 });
 
 // Computed
@@ -179,6 +188,20 @@ const filteredCars = computed(() => {
             if (dealType === "Not Bad") return car.card_color === "yellow";
             return true;
         });
+    }
+    if (filters.value.order === "desc") {
+        result = result.sort(
+            (a, b) =>
+                b.price_difference_with_avg_price -
+                a.price_difference_with_avg_price,
+        );
+    }
+    if (filters.value.order === "asc") {
+        result = result.sort(
+            (a, b) =>
+                a.price_difference_with_avg_price -
+                b.price_difference_with_avg_price,
+        );
     }
     return result;
 });
@@ -213,6 +236,7 @@ function resetFilters() {
         name: "",
         model: "",
         deals: "",
+        order: "desc",
     };
 }
 
