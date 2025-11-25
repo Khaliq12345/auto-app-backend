@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
@@ -23,6 +24,15 @@ from supabase.lib.client_options import SyncClientOptions
 from config import config
 from services import autoscout24, lacentrale, leboncoin
 from utilities import utils
+
+args = ArgumentParser()
+args.add_argument("--mileage-plus-minus", type=int, default=10000)
+args.add_argument("--dev", action="store_true")
+args.add_argument("--ignore-old", action="store_true")
+args.add_argument("--sites-to-scrape", type=str, default="leboncoin:lacentrale")
+args.add_argument("--car-id", type=int, default=None)
+parsed_args = args.parse_args()
+print(parsed_args)
 
 OUT_FILE = Path(config.UPLOAD_FILE)
 session_deps = Depends()
@@ -308,11 +318,11 @@ def get_status():
 
 if __name__ == "__main__":
     start_services(
-        10000,
-        dev=False,
-        ignore_old=True,
-        sites_to_scrape=["leboncoin"],
-        car_id=None,
+        parsed_args.mileage_plus_minus,
+        dev=parsed_args.dev,
+        ignore_old=parsed_args.ignore_old,
+        sites_to_scrape=parsed_args.sites_to_scrape.split(":"),
+        car_id=parsed_args.car_id,
     )
 
 

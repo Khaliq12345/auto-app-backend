@@ -40,11 +40,11 @@ cookies = {
     '_scid_r': '-KUW8A2nKR2Dg6U2tXAVKRs60nB4zRuYcGgimg',
     '_ga_Z707449XJ2': 'GS2.1.s1760090958$o36$g0$t1760090958$j60$l0$h917968118',
     'lg': '9',
-    'cto_bundle': 'SoI5kV9FbUVLbFRBR1hoRjVkc0V1UnlqUURCZHVSYXJydDZFWU5vRnRpT2kxUk4lMkZDVEpoblM5VTBGdFlSeXlkUyUyRmJRbVdjMVpmTDNocDNWMUkxQUM5SXFMb3o1RjI2ajRNJTJGcnZRY0c3VmZPZjRud3F1OGsxYXRSQnRWZzB0OTFLWTVVaTc3MzclMkI4Y29aWXh2SDViajBFeTklMkZrRXg2ZDE2SFhDZyUyRmpqZVdnSG1hRFUlM0Q',
-    '__gads': 'ID=aacc7c3b980ef105:T=1754207334:RT=1763670950:S=ALNI_MbkArq2M_cUnYFwLV1ZEZXIAP9Tfw',
-    '__gpi': 'UID=00001243a1aa4db2:T=1754207334:RT=1763670950:S=ALNI_MYTmGBVUQA82DutdqJJcnE5S1VGcg',
-    '__eoi': 'ID=6a69744913b00b24:T=1754207334:RT=1763670950:S=AA-AfjZjG2ffcw1fDjRmsFKHAx6I',
-    'datadome': 'Jg_xkd64Bn2FnJHnLNW4mFjexeFKY9VOua3CkxK2sRkVfnxf_nrdgYwX4elrPaqHcc~UEJNEDRkWNgn8l8aNUOI96RH3CyA1wZ00N_ZyoAuo795Gv2sj3c1~yyXSvqN7',
+    'cto_bundle': 'gbRMJ19FbUVLbFRBR1hoRjVkc0V1UnlqUURLWFQ1cDN5YVNESTVUcTgzVHdlZ2haZ0tGdGlrSEpseW1RTXpoeEhkYllySTglMkJGdUhCU1EycngyZzdMWWFDWlJqdFNLYkZMZmVaQlZ0OFMwY1lzayUyRkRaVjFEOTBpJTJCbDh4OHl1UGp0TTdoMmZ0eGI5NlhNZE1Za2paMnhiRjhRJTJGcnhYczFaWkJEUUFudEk2UTJXJTJGclk4JTNE',
+    '__gads': 'ID=aacc7c3b980ef105:T=1754207334:RT=1764053538:S=ALNI_MbkArq2M_cUnYFwLV1ZEZXIAP9Tfw',
+    '__gpi': 'UID=00001243a1aa4db2:T=1754207334:RT=1764053538:S=ALNI_MYTmGBVUQA82DutdqJJcnE5S1VGcg',
+    '__eoi': 'ID=6a69744913b00b24:T=1754207334:RT=1764053538:S=AA-AfjZjG2ffcw1fDjRmsFKHAx6I',
+    'datadome': 'FleyHe3_bXcaB8NoZ4IYjUbIBIYw9gx1c3MT6D~2k72dGv0anPkA5Dk21xT0KPDoJVKdmvZlGx2dGS1lk3ikuhvr6iHoA0UubWjyqTEA~C7jjbQvNhaKMoYmrchkhu_x',
 }
 
 headers = {
@@ -54,7 +54,7 @@ headers = {
     'content-type': 'application/json',
     'origin': 'https://www.leboncoin.fr',
     'priority': 'u=1, i',
-    'referer': 'https://www.leboncoin.fr/c/voitures/p-100',
+    'referer': 'https://www.leboncoin.fr/recherche?category=2&u_car_brand=AUDI',
     'sec-ch-ua': '"Not_A Brand";v="99", "Chromium";v="142"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Linux"',
@@ -62,9 +62,8 @@ headers = {
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-site',
     'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-    'x-lbc-experiment': 'eyJ2ZXJzaW9uIjoxLCJyb2xsb3V0X3Zpc2l0b3JfaWQiOiI2Y2VmZDQ3Yy0wZDliLTRjZTctOWJjOS0zNGM5MTNkMGI5MGIifQ==',
+    'x-lbc-experiment': 'eyJ2ZXJzaW9uIjoxLCJyb2xsb3V0X3Zpc2l0b3JfaWQiOiI2Y2VmZDQ3Yy0wZDliLTRjZTctOWJjOS0zNGM5MTNkMGI5MGIifQ==', 
 }
-
 def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car] | None:
