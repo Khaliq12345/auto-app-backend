@@ -5,8 +5,7 @@ export default defineNuxtConfig({
   css: ["~/assets/css/main.css"],
   modules: ["@nuxt/ui", "@nuxt/fonts", "nuxt-file-storage"],
   fileStorage: {
-    mount:
-      "/home/eldo-moreo/Project/Dev/Tech2work/auto-app-backend/public/uploads",
+    mount: "../files/uploads",
   },
   runtimeConfig: {
     public: {
