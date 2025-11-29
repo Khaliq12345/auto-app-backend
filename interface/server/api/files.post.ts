@@ -1,4 +1,4 @@
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { defineEventHandler, readMultipartFormData } from "h3";
 
@@ -12,15 +12,23 @@ export default defineEventHandler(async (event) => {
   if (!file) {
     throw createError({ statusCode: 400, message: "Missing file" });
   }
-  const name = "25630.xlsx";
-  // Sauvegarde dans /public/uploads/
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
-  const filePath = path.join(uploadDir, name || "uploaded.xlsx");
 
+  // Nom du fichier
+  const name = "25630.xlsx";
+
+  // 🔥 Emplacement : auto-app-backend/files/uploads
+  const uploadDir = path.join(process.cwd(), "..", "files", "uploads");
+
+  // Crée le dossier si nécessaire (évite ENOENT)
+  await mkdir(uploadDir, { recursive: true });
+
+  const filePath = path.join(uploadDir, name);
+
+  // Sauvegarde du fichier
   await writeFile(filePath, file.data);
 
   return {
     success: true,
-    url: `/uploads/${name}`,
+    saved: filePath,
   };
 });
