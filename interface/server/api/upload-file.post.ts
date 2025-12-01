@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   //  Nom original du fichier
   const filename = file.filename;
 
-  const backendURL = "http://127.0.0.1:8000/upload-file";
+  const backendURL = "http://127.0.0.1:5000/upload-file";
 
   // Nitro fournit automatiquement FormData côté serveur
   const formData = new FormData();

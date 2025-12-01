@@ -1,8 +1,10 @@
 from typing import Annotated
-
+from pathlib import Path
 from fastapi import (
     Depends,
     FastAPI,
+    File,
+    UploadFile,
     HTTPException,
 )
 from fastapi.encoders import jsonable_encoder
@@ -194,3 +196,54 @@ def get_status():
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)  # Crée le dossier si absent
+
+
+@app.post("/upload-file")
+async def upload_file(file: UploadFile = File(...)):
+    # 1. Vérifier le type du fichier
+    allowed_types = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "application/octet-stream",
+    ]
+    print("Uploaded file content type:", file.content_type)
+
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, detail="Only Excel files (.xlsx, .xls) are allowed."
+        )
+
+    # 2. Lire le contenu
+    try:
+        content = await file.read()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to read uploaded file")
+
+    # 3. Nom du fichier
+    filename = "25630.xlsx"
+    file_path = UPLOAD_DIR / filename
+
+    # 4. Sauvegarde locale
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save file locally: {e}",
+        )
+
+    return {
+        "message": "File uploaded successfully",
+        "filename": filename,
+        "path": str(file_path),
+    }
+
