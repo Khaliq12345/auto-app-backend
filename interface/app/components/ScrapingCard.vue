@@ -89,7 +89,7 @@ import type { ScrapingStatusResponse } from "~/types";
 const files = ref<any[]>([]);
 
 const uploadFile = async () => {
-    if (!files.value[0]) return alert("Aucun fichier sélectionné");
+    if (!files.value) return alert("Aucun fichier sélectionné");
 
     const file = files.value[0];
     const formData = new FormData();
