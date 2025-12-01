@@ -68,7 +68,12 @@
             </div>
         </UCard>
         <div>
-            <UFileUpload class="w-full min-h-48" @input="handleFileInput" />
+            <UFileUpload
+                v-model="files"
+                accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                class="w-full min-h-48"
+            />
+
             <UButton
                 class="items-center justify-center w-full mt-6"
                 @click="uploadFile"
@@ -81,56 +86,22 @@
 
 <script setup lang="ts">
 import type { ScrapingStatusResponse } from "~/types";
-const { files, handleFileInput } = useFileStorage();
-
-function dataURLtoBlob(dataUrl: string) {
-    // Sépare la partie meta (type MIME etc.) de la partie base64
-    const [meta, base64] = dataUrl.split(",");
-
-    // Extrait le type MIME, par exemple "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    const mime = meta.match(/:(.*?);/)[1];
-
-    // Décode la chaîne base64 en données binaires (chaîne de caractères où chaque char représente un octet)
-    const binary = atob(base64);
-
-    // Crée un buffer de la bonne taille (nombre d'octets)
-    let length = binary.length;
-    const buffer = new Uint8Array(length);
-
-    // Remplit le buffer octet par octet avec les codes des caractères binaires
-    // (transforme la chaîne binaire en tableau d'octets numériques)
-    while (length--) {
-        buffer[length] = binary.charCodeAt(length);
-    }
-
-    // Crée un Blob à partir du tableau d'octets avec le type MIME approprié
-    return new Blob([buffer], { type: mime });
-}
+const files = ref<any[]>([]);
 
 const uploadFile = async () => {
-    if (!files.value.length) {
-        return alert("No file selected");
-    }
+    if (!files.value) return alert("Aucun fichier sélectionné");
 
-    const f = files.value[0];
-
-    // Convertir le dataURL → Blob
-    const blob = dataURLtoBlob(f.content);
-
+    const file = files.value[0];
     const formData = new FormData();
-    formData.append("file", blob, f.name);
+    formData.append("file", file);
 
-    try {
-        await $fetch("/api/files", {
-            method: "POST",
-            body: formData,
-        });
-        alert("Fichier uploadé avec succès !");
-        files.value = [];
-    } catch (error) {
-        console.error(error);
-        alert("Erreur lors de l'upload");
-    }
+    await $fetch("/api/upload-file", {
+        method: "POST",
+        body: formData,
+    });
+
+    alert("Upload OK");
+    files.value = [];
 };
 
 // Fetch scraping status from API with error handling
