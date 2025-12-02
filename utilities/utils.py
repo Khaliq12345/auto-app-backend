@@ -6,6 +6,7 @@ from datetime import datetime
 import traceback
 from config import config
 import os
+import json
 from selectolax.parser import Node
 from dateparser import parse
 import string
@@ -26,6 +27,18 @@ fuel_types = {
     11: "Bi-Fuel",
     0: "Andere",
 }
+
+
+def get_json_from_local(path: str) -> dict | None:
+    """
+    Charge un fichier JSON depuis le chemin spécifié.
+    Retourne le contenu JSON ou None si le fichier n'existe pas ou n'est pas valide.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
 
 
 def get_text(node: Node | None):
