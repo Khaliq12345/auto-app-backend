@@ -259,4 +259,3 @@ async def upload_file(
         "path": str(file_path),
         "upload_type": upload_type,
     }
-

@@ -1,11 +1,12 @@
 from urllib.parse import ParseResult, urlencode, urlunparse
+
 import httpx
 from selectolax.parser import HTMLParser
-from browser import client, types
-from model.model import Filter, Car
-from utilities import utils
-from browser import get_the_listing_html
+
+from browser import client, get_the_listing_html, types
 from config.config import PROXY_PASSWORD, PROXY_USERNAME
+from model.model import Car, Filter
+from utilities import utils
 
 domain = "https://www.leboncoin.fr/"
 

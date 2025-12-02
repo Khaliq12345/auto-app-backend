@@ -134,7 +134,7 @@ const uploadFile = async () => {
             {
                 method: "POST",
                 body: formData,
-            }
+            },
         );
 
         if (response.success) {
@@ -148,7 +148,8 @@ const uploadFile = async () => {
         } else {
             toast.add({
                 title: "Erreur lors de l'upload",
-                description: response.error || "Une erreur inconnue s'est produite.",
+                description:
+                    response.error || "Une erreur inconnue s'est produite.",
                 icon: "i-heroicons-x-circle",
                 color: "error",
             });

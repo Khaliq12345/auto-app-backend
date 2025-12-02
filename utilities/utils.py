@@ -1,16 +1,17 @@
-import pandas as pd
-from supabase import Client, create_client
-from model.model import Car
-from fastapi.encoders import jsonable_encoder
-from datetime import datetime
-import traceback
-from config import config
-import os
 import json
-from selectolax.parser import Node
-from dateparser import parse
+import os
 import string
+import traceback
+from datetime import datetime
 
+import pandas as pd
+from dateparser import parse
+from fastapi.encoders import jsonable_encoder
+from selectolax.parser import Node
+from supabase import Client, create_client
+
+from config import config
+from model.model import Car
 
 url = config.SUPABASE_URL
 supabase_key = config.SUPABASE_KEY
