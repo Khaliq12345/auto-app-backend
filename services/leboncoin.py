@@ -1,11 +1,12 @@
 from urllib.parse import ParseResult, urlencode, urlunparse
+
 import httpx
 from selectolax.parser import HTMLParser
-from browser import client, types
-from model.model import Filter, Car
-from utilities import utils
-from browser import get_the_listing_html
+
+from browser import client, get_the_listing_html, types
 from config.config import PROXY_PASSWORD, PROXY_USERNAME
+from model.model import Car, Filter
+from utilities import utils
 
 domain = "https://www.leboncoin.fr/"
 
@@ -21,49 +22,6 @@ leboncoin_fuel_dict = {
 }
 
 
-cookies = {
-    '__Secure-Install': '36ae2011-5d35-4273-9d08-d42eb458331f',
-    'cnfdVisitorId': '6cefd47c-0d9b-4ce7-9bc9-34c913d0b90b',
-    'didomi_token': 'eyJ1c2VyX2lkIjoiMTk4NmE1ZmYtNjUzNi02OGEyLWJlMDEtNTBlOGQ5OWVhNjA1IiwiY3JlYXRlZCI6IjIwMjUtMDgtMDJUMTA6NDI6MTAuNjQzWiIsInVwZGF0ZWQiOiIyMDI1LTA4LTAyVDEwOjQyOjEyLjg3M1oiLCJ2ZW5kb3JzIjp7ImVuYWJsZWQiOlsiZ29vZ2xlIiwiYzpsYmNmcmFuY2UiLCJjOmdvb2dsZWFuYS00VFhuSmlnUiIsImM6cHVycG9zZWxhLTN3NFpmS0tEIiwiYzptNnB1YmxpY2ktdFhUWUROQWMiLCJjOmFmZmlsaW5ldCIsImM6c3BvbmdlY2VsbC1ueXliQUtIMiIsImM6dGlrdG9rLXJLQVlEZ2JIIiwiYzp6YW5veC1hWVl6NnpXNCIsImM6cGludGVyZXN0IiwiYzpwcmViaWRvcmctSGlqaXJZZGIiLCJjOmlnbml0aW9uby1MVkFNWmRuaiIsImM6ZGlkb21pIiwiYzpsYmNmcmFuY2UtSHkza1lNOUYiXX0sInB1cnBvc2VzIjp7ImVuYWJsZWQiOlsiZXhwZXJpZW5jZXV0aWxpc2F0ZXVyIiwibWVzdXJlYXVkaWVuY2UiLCJwZXJzb25uYWxpc2F0aW9ubWFya2V0aW5nIiwicHJpeCIsImRldmljZV9jaGFyYWN0ZXJpc3RpY3MiLCJjb21wYXJhaXNvLVkzWnkzVUV4IiwiZ2VvbG9jYXRpb25fZGF0YSJdfSwidmVuZG9yc19saSI6eyJlbmFibGVkIjpbImdvb2dsZSIsImM6cHVycG9zZWxhLTN3NFpmS0tEIl19LCJ2ZXJzaW9uIjoyLCJhYyI6IkRDS0FnQUZrQTl3Q1N3SWtnUlRBNmNDQmdFVkFKclFVR0FvUkJYT0N3WUZ0NExsZ1lSQUEuRENLQWdBRmtBOXdDU3dJa2dSVEE2Y0NCZ0VWQUpyUVVHQW9SQlhPQ3dZRnQ0TGxnWVJBQSJ9',
-    'euconsent-v2': 'CQVhVIAQVhVIAAHABBENB1FsAP_gAELgAAAAKENB7CfdQSFiUbJlAOtAYQxP4BAiogAABgABgwwBCBLAMIwEhGAIIADAAAACGBAAICBAAQBlCADAAAAAIAAAACAEAAAAARAAJiAAAEAAAmBICABICYAAAQAQgkiEAAEAgAIAAAogSEgAAAAAHAAAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAACAAAAAAEAFAAAAAAAAAAAAAAAAAMAAAAAAAABBQiBeAAsAB4AFQAOAAeABAACQAFQAMoAaABqADwAIYATAAoQBcAF0AMQAfAA_ACEAEdAMoAywBogDnAHcAP2Ag4CEAEWAIxARwBHQDRAGvANoAj0BNoCj4FNAU2ArIBbAC8wGSAMnAZZA1cDWAIAgQvAjsBQgAMUABgACC2gwADAAEFtCAAGAAILaAA.f_wACFwAAAAA',
-    '_ga': 'GA1.1.1570886354.1754131333',
-    'FPID': 'FPID2.2.ON2v7dK1aWcr2RhsSQNJeFJAO8dDHLq0N%2BgXlbs1oWM%3D.1754131333',
-    'deviceId': 'e7475994-8fbe-4025-8fb5-384271b1796f',
-    '_hjSessionUser_2783207': 'eyJpZCI6ImE5MDM1OTM1LTVmMzAtNTNhOS05NDBhLWQ2Njk3OWQ0NTU1MCIsImNyZWF0ZWQiOjE3NTQxMzEzMzQ2NTgsImV4aXN0aW5nIjp0cnVlfQ==',
-    '_pcid': '%7B%22browserId%22%3A%22mdvdqyefgoxu2yfe%22%2C%22_t%22%3A%22mtjsohqa%7Cmdvdr0ea%22%7D',
-    '_pctx': '%7Bu%7DN4IgrgzgpgThIC4B2YA2qA05owMoBcBDfSREQpAeyRCwgEt8oBJAE0RXSwH18yBbfACsIlABYBHAEYAffqwBurGAAYoUkAF8gA',
-    '__gsas': 'ID=663b8f9af9388491:T=1754207327:RT=1754207327:S=ALNI_MZs4JO4EEVJDS7sEm59bJIadUdcEA',
-    'ry_ry-l3b0nco_realytics': 'eyJpZCI6InJ5X0VGOTAzQ0U2LTFFQzktNDYzOS04MzNBLUY1NzZFNjVCQTlCRSIsImNpZCI6bnVsbCwiZXhwIjoxNzg1NjY3MzM4NDA1LCJjcyI6MX0%3D',
-    '_fbp': 'fb.1.1754207399461.156474195924338493',
-    '_scid': '6iUW8A2nKR2Dg6U2tXAVKRs60nB4zRuY',
-    '_sctr': '1%7C1759964400000',
-    '_scid_r': '-KUW8A2nKR2Dg6U2tXAVKRs60nB4zRuYcGgimg',
-    '_ga_Z707449XJ2': 'GS2.1.s1760090958$o36$g0$t1760090958$j60$l0$h917968118',
-    'lg': '9',
-    'cto_bundle': 'gbRMJ19FbUVLbFRBR1hoRjVkc0V1UnlqUURLWFQ1cDN5YVNESTVUcTgzVHdlZ2haZ0tGdGlrSEpseW1RTXpoeEhkYllySTglMkJGdUhCU1EycngyZzdMWWFDWlJqdFNLYkZMZmVaQlZ0OFMwY1lzayUyRkRaVjFEOTBpJTJCbDh4OHl1UGp0TTdoMmZ0eGI5NlhNZE1Za2paMnhiRjhRJTJGcnhYczFaWkJEUUFudEk2UTJXJTJGclk4JTNE',
-    '__gads': 'ID=aacc7c3b980ef105:T=1754207334:RT=1764053538:S=ALNI_MbkArq2M_cUnYFwLV1ZEZXIAP9Tfw',
-    '__gpi': 'UID=00001243a1aa4db2:T=1754207334:RT=1764053538:S=ALNI_MYTmGBVUQA82DutdqJJcnE5S1VGcg',
-    '__eoi': 'ID=6a69744913b00b24:T=1754207334:RT=1764053538:S=AA-AfjZjG2ffcw1fDjRmsFKHAx6I',
-    'datadome': 'FleyHe3_bXcaB8NoZ4IYjUbIBIYw9gx1c3MT6D~2k72dGv0anPkA5Dk21xT0KPDoJVKdmvZlGx2dGS1lk3ikuhvr6iHoA0UubWjyqTEA~C7jjbQvNhaKMoYmrchkhu_x',
-}
-
-headers = {
-    'accept': '*/*',
-    'accept-language': 'en-US,en;q=0.9',
-    'api_key': 'ba0c2dad52b3ec',
-    'content-type': 'application/json',
-    'origin': 'https://www.leboncoin.fr',
-    'priority': 'u=1, i',
-    'referer': 'https://www.leboncoin.fr/recherche?category=2&u_car_brand=AUDI',
-    'sec-ch-ua': '"Not_A Brand";v="99", "Chromium";v="142"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Linux"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-site',
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-    'x-lbc-experiment': 'eyJ2ZXJzaW9uIjoxLCJyb2xsb3V0X3Zpc2l0b3JfaWQiOiI2Y2VmZDQ3Yy0wZDliLTRjZTctOWJjOS0zNGM5MTNkMGI5MGIifQ==', 
-}
 def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car] | None:
@@ -156,7 +114,7 @@ def extract_10_cars(
 
 def user_prompt(models, fuel_types, target_dict):
     print(f"Models - {models}")
-    return f""" 
+    return f"""
         You are an AI assistant tasked with generating a dictionary that matches a provided vehicle specification dictionary,
         using only values from specified lists and dictionaries. I will provide you with:
         - A list of vehicle models.
@@ -210,6 +168,8 @@ def get_prompt_from_make(input_dict: dict) -> str:
     }
     print("Sending requests to get the models")
     proxy = f"http://{PROXY_USERNAME}:{PROXY_PASSWORD}@fr.decodo.com:40000"
+    headers = utils.get_json_from_local("./uploads/Leboncoin_Headers.json")
+    cookies = utils.get_json_from_local("./uploads/Leboncoin_Cookies.json")
     response = httpx.post(
         "https://api.leboncoin.fr/finder/search",
         headers=headers,

@@ -68,17 +68,26 @@
             </div>
         </UCard>
         <div>
+            <URadioGroup
+                v-model="uploadType"
+                :items="uploadTypeItems"
+                orientation="horizontal"
+                class="mb-4"
+            />
+
             <UFileUpload
                 v-model="files"
-                accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                accept=".xls,.xlsx,.json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json"
                 class="w-full min-h-48"
             />
 
             <UButton
                 class="items-center justify-center w-full mt-6"
+                :loading="isUploading"
+                :disabled="isUploading"
                 @click="uploadFile"
             >
-                Upload a new file
+                {{ isUploading ? "Upload en cours..." : "Upload a new file" }}
             </UButton>
         </div>
     </UPageCard>
@@ -86,22 +95,75 @@
 
 <script setup lang="ts">
 import type { ScrapingStatusResponse } from "~/types";
-const files = ref<any[]>([]);
+import type { RadioGroupItem } from "@nuxt/ui";
+
+const toast = useToast();
+const files = ref<File | null>(null);
+const uploadType = ref("Input File");
+const isUploading = ref(false);
+
+const uploadTypeItems: RadioGroupItem[] = [
+    { label: "Input File", value: "Input File" },
+    { label: "Leboncoin cookies", value: "Leboncoin cookies" },
+    { label: "Leboncoin Headers", value: "Leboncoin Headers" },
+    { label: "Lacentrale Cookies", value: "Lacentrale Cookies" },
+    { label: "Lacentrale Headers", value: "Lacentrale Headers" },
+];
 
 const uploadFile = async () => {
-    if (!files.value) return alert("Aucun fichier sélectionné");
+    if (!files.value) {
+        toast.add({
+            title: "Aucun fichier sélectionné",
+            description: "Veuillez sélectionner un fichier avant de continuer.",
+            icon: "i-heroicons-exclamation-triangle",
+            color: "warning",
+        });
+        return;
+    }
 
-    const file = files.value[0];
-    const formData = new FormData();
-    formData.append("file", file);
+    isUploading.value = true;
 
-    await $fetch("/api/upload-file", {
-        method: "POST",
-        body: formData,
-    });
+    try {
+        const file = files.value;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_type", uploadType.value);
 
-    alert("Upload OK");
-    files.value = [];
+        const response = await $fetch<{ success: boolean; error?: string }>(
+            "/api/upload-file",
+            {
+                method: "POST",
+                body: formData,
+            },
+        );
+
+        if (response.success) {
+            toast.add({
+                title: "Upload réussi",
+                description: `Le fichier a été uploadé avec succès.`,
+                icon: "i-heroicons-check-circle",
+                color: "success",
+            });
+            files.value = null;
+        } else {
+            toast.add({
+                title: "Erreur lors de l'upload",
+                description:
+                    response.error || "Une erreur inconnue s'est produite.",
+                icon: "i-heroicons-x-circle",
+                color: "error",
+            });
+        }
+    } catch (error: any) {
+        toast.add({
+            title: "Erreur lors de l'upload",
+            description: error?.message || "Une erreur réseau s'est produite.",
+            icon: "i-heroicons-x-circle",
+            color: "error",
+        });
+    } finally {
+        isUploading.value = false;
+    }
 };
 
 // Fetch scraping status from API with error handling

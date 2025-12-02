@@ -4,6 +4,7 @@ from fastapi import (
     Depends,
     FastAPI,
     File,
+    Form,
     UploadFile,
     HTTPException,
 )
@@ -207,18 +208,24 @@ UPLOAD_DIR.mkdir(exist_ok=True)  # Crée le dossier si absent
 
 
 @app.post("/upload-file")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    upload_type: str = Form("Input File"),
+):
     # 1. Vérifier le type du fichier
     allowed_types = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
         "application/octet-stream",
+        "application/json",
     ]
     print("Uploaded file content type:", file.content_type)
+    print("Upload type:", upload_type)
 
     if file.content_type not in allowed_types:
         raise HTTPException(
-            status_code=400, detail="Only Excel files (.xlsx, .xls) are allowed."
+            status_code=400,
+            detail="Only Excel files (.xlsx, .xls) and JSON files are allowed.",
         )
 
     # 2. Lire le contenu
@@ -227,8 +234,13 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception:
         raise HTTPException(status_code=400, detail="Failed to read uploaded file")
 
-    # 3. Nom du fichier
-    filename = "25630.xlsx"
+    # 3. Déterminer le nom du fichier en fonction du type d'upload
+    if upload_type == "Input File":
+        filename = "25630.xlsx"
+    else:
+        # Remplacer les espaces par des _ et ajouter l'extension .json
+        filename = upload_type.replace(" ", "_") + ".json"
+
     file_path = UPLOAD_DIR / filename
 
     # 4. Sauvegarde locale
@@ -245,5 +257,5 @@ async def upload_file(file: UploadFile = File(...)):
         "message": "File uploaded successfully",
         "filename": filename,
         "path": str(file_path),
+        "upload_type": upload_type,
     }
-
