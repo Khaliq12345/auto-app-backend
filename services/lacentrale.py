@@ -20,20 +20,6 @@ lacentrale_fuel_dict = {
     9: "ETHANOL",  # Éthanol (Ethanol), including duplicate
 }
 
-headers = {
-    "Accept": "application/json",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Connection": "keep-alive",
-    "Origin": "https://www.lacentrale.fr",
-    "Referer": "https://www.lacentrale.fr/",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-site",
-    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
-    "X-Client-Source": "lc:recherche:front",
-    "x-api-key": "2vHD2GjDJ07RpNvbGYpJG7s6bQNwRNkI9SEkgQnR",
-    "x-datadome-clientid": "a4q2j0iqtiMWoIo_33on6d_RQf8ceLbhqLzvKLjqvF4gqwh7LU5YDzmFcmAUJyU1Hu6B8zQZInuNms0GYqbMp_DkpDwToSvCrx8D_9V0lkbHk3zruN0A0PEKFkmfdj9m",
-}
 params = {
     "aggregations": "EXTERNAL_COLOR,MAKE_MODEL_COMMERCIAL_NAME,VERSION",
     "families": "AUTO,UTILITY",
@@ -127,6 +113,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
     print("Sending requests to get the models and versions")
     params["makesModelsCommercialNames"] = input_dict["make"]
     print(params)
+    headers = utils.get_json_from_local("./uploads/Lacentrale_Headers.json")
     response = httpx.get(
         "https://recherche.lacentrale.fr/v5/aggregations",
         params=params,

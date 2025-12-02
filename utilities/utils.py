@@ -1,15 +1,17 @@
-import pandas as pd
-from supabase import Client, create_client
-from model.model import Car
-from fastapi.encoders import jsonable_encoder
-from datetime import datetime
-import traceback
-from config import config
+import json
 import os
-from selectolax.parser import Node
-from dateparser import parse
 import string
+import traceback
+from datetime import datetime
 
+import pandas as pd
+from dateparser import parse
+from fastapi.encoders import jsonable_encoder
+from selectolax.parser import Node
+from supabase import Client, create_client
+
+from config import config
+from model.model import Car
 
 url = config.SUPABASE_URL
 supabase_key = config.SUPABASE_KEY
@@ -26,6 +28,18 @@ fuel_types = {
     11: "Bi-Fuel",
     0: "Andere",
 }
+
+
+def get_json_from_local(path: str) -> dict | None:
+    """
+    Charge un fichier JSON depuis le chemin spécifié.
+    Retourne le contenu JSON ou None si le fichier n'existe pas ou n'est pas valide.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
 
 
 def get_text(node: Node | None):
@@ -139,7 +153,10 @@ def save_to_db(data: dict | list[dict], table: str):
             supabase_key=supabase_key,
             supabase_url=url,
         )
-        client.table(table).insert(data).execute()
+        try:
+            client.table(table).insert(data).execute()
+        except Exception as _:
+            client.table(table).update(data).eq("id", data["id"]).execute()
         return True
     except Exception as e:
         print(f"Saving Error - {e}")

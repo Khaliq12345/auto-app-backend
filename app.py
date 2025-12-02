@@ -1,20 +1,16 @@
-import os
+from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Annotated, Optional, Union
 
-import aiofiles
 import pandas as pd
 from fastapi import (
-    BackgroundTasks,
     Depends,
     FastAPI,
     File,
     HTTPException,
-    UploadFile,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,10 +20,20 @@ from supabase import (
     Client,
     create_client,
 )
+from supabase.lib.client_options import SyncClientOptions
 
 from config import config
 from services import autoscout24, lacentrale, leboncoin
 from utilities import utils
+
+args = ArgumentParser()
+args.add_argument("--mileage-plus-minus", type=int, default=10000)
+args.add_argument("--dev", action="store_true")
+args.add_argument("--ignore-old", action="store_true")
+args.add_argument("--sites-to-scrape", type=str, default="leboncoin:lacentrale")
+args.add_argument("--car-id", type=int, default=None)
+parsed_args = args.parse_args()
+print(parsed_args)
 
 OUT_FILE = Path(config.UPLOAD_FILE)
 session_deps = Depends()
@@ -62,6 +68,7 @@ def get_session() -> Client:
     client: Client = create_client(
         supabase_key=utils.supabase_key,
         supabase_url=utils.url,
+        options=SyncClientOptions(postgrest_client_timeout=60000),
     )
     return client
 
@@ -178,190 +185,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.post("/login")
-def login(
-    client: Annotated[Client, Depends(get_session)],
-    email: str,
-    password: str,
-):
-    try:
-        response = client.auth.sign_in_with_password(
-            credentials={
-                "email": email,
-                "password": password,
-            }
-        )
-        return {
-            "message": "Login successful",
-            "details": jsonable_encoder(response),
-        }
-    except AuthApiError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-        )
-
-
-@app.get("/get_all_cars")
-def get_all_cars(
-    # access_token: str,
-    # refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
-    offset: int = 0,
-    limit: int = 20,
-    cut_off_price: int = 500,
-    domain: str | None = None,
-    percentage_limit: int = 95,
-):
-    try:
-        # auth = client.auth.set_session(
-        #     access_token=access_token,
-        #     refresh_token=refresh_token,
-        # )
-        stmt = (
-            client.table("Vehicles")
-            .select("*, comparisons(*)", count=CountMethod.exact)
-            .limit(limit)
-            .offset(offset)
-            .order(
-                "matching_percentage",
-                desc=True,
-                foreign_table="comparisons",
-            )
-        )
-        if domain:
-            stmt = stmt.eq("comparisons.domain", domain)
-        response = stmt.execute()
-        vehicles = []
-        for vehicle in response.data:
-            comparison_prices = [x["price"] for x in vehicle["comparisons"]]
-            comparison_prices = [0] if not comparison_prices else comparison_prices
-            vehicle["lowest_price"] = min(comparison_prices)
-            vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
-            avg_price = get_avg_price_based_on_domain(
-                vehicle["comparisons"],
-                percentage_limit,
-            )
-            vehicle["average_price_based_on_best_match"] = avg_price
-            vehicle["price_difference_with_avg_price"] = (
-                avg_price - vehicle["price_with_tax"]
-            )
-
-            if vehicle["price_with_tax"] < avg_price:
-                vehicle["card_color"] = "green"
-            elif abs(vehicle["price_with_tax"] - avg_price) >= cut_off_price:
-                vehicle["card_color"] = "red"
-            else:
-                vehicle["card_color"] = "yellow"
-            best_match_cars = sorted(
-                vehicle["comparisons"],
-                key=lambda x: x["matching_percentage"],
-                reverse=True,
-            )
-            vehicle["best_match_percentage"] = 0
-            vehicle["best_match_link"] = None
-            if best_match_cars:
-                best_match_car = best_match_cars[0]
-                vehicle["best_match_percentage"] = best_match_car.get(
-                    "matching_percentage"
-                )
-                vehicle["best_match_link"] = best_match_car.get("link")
-
-            vehicles.append(vehicle)  # 2091556
-        return {
-            # "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(vehicles),
-            "total": response.count,
-        }
-    except AuthApiError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/scrape_status")
-def get_status(
-    # access_token: str,
-    # refresh_token: str,
-    client: Annotated[Client, Depends(get_session)],
-):
-    try:
-        # auth = client.auth.set_session(
-        #     access_token=access_token,
-        #     refresh_token=refresh_token,
-        # )
-        response = client.table("Status").select("*").execute()
-        return {
-            # "session": jsonable_encoder(auth),
-            "details": jsonable_encoder(response),
-        }
-    except AuthApiError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)  # Crée le dossier si absent
-
-
-@app.post("/upload-file")
-async def upload_file(file: UploadFile = File(...)):
-    # 1. Vérifier le type du fichier
-    allowed_types = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel",
-        "application/octet-stream",
-    ]
-    print("Uploaded file content type:", file.content_type)
-
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400, detail="Only Excel files (.xlsx, .xls) are allowed."
-        )
-
-    # 2. Lire le contenu
-    try:
-        content = await file.read()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Failed to read uploaded file")
-
-    # 3. Nom du fichier
-    filename = "25630.xlsx"
-    file_path = UPLOAD_DIR / filename
-
-    # 4. Sauvegarde locale
-    try:
-        with open(file_path, "wb") as f:
-            f.write(content)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to save file locally: {e}",
-        )
-
-    return {
-        "message": "File uploaded successfully",
-        "filename": filename,
-        "path": str(file_path),
-    }
-
-
 if __name__ == "__main__":
     start_services(
-        10000,
-        dev=False,
-        ignore_old=True,
-        sites_to_scrape=["lacentrale"],
-        car_id=None,
+        parsed_args.mileage_plus_minus,
+        dev=parsed_args.dev,
+        ignore_old=parsed_args.ignore_old,
+        sites_to_scrape=parsed_args.sites_to_scrape.split(":"),
+        car_id=parsed_args.car_id,
     )
 
 
