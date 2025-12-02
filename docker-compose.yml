@@ -1,9 +1,30 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--port", "6379"]
+
   auto-app:
     build: .
+    env_file:
+      - .env
     ports:
-      - "8500:8500"
+      - "${APP_PORT}:8500"
     volumes:
       - ./uploads:/uploads
       - ./logs:/logs
-    restart: unless-stopped
+    restart: always
+    depends_on:
+      - redis
+
+  celery-worker:
+    build: .
+    env_file:
+      - .env
+    command: celery -A celery_app worker --loglevel=info
+    volumes:
+      - ./uploads:/uploads
+      - ./logs:/logs
+    restart: always
+    depends_on:
+      - redis
