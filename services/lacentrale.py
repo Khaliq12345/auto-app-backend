@@ -119,6 +119,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
         params=params,
         headers=headers,
     )
+    response.raise_for_status()
     print(f"Filter - {response.status_code}")
     json_data = response.json()
     all_models = []
@@ -260,8 +261,7 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
     return filter_urls
 
 
-@utils.runner
-def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
+def main(car_dict: dict, mileage_plus_minus):
     make = car_dict["make"]
     if make == "VW":
         print("MAKE ", make)
@@ -269,10 +269,7 @@ def main(car_dict: dict, mileage_plus_minus) -> list[Car]:
     elif make == "DS AUTOMOBILES":
         make = "DS"
     car_dict["make"] = make
-    try:
-        filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
-    except Exception as e:
-        print(e)
+    filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()
     cars = []
     for idx, filter_url in enumerate(filter_urls):

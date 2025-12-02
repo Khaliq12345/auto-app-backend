@@ -170,6 +170,7 @@ def get_prompt_from_make(input_dict: dict) -> str:
     proxy = f"http://{PROXY_USERNAME}:{PROXY_PASSWORD}@fr.decodo.com:40000"
     headers = utils.get_json_from_local("./uploads/Leboncoin_Headers.json")
     cookies = utils.get_json_from_local("./uploads/Leboncoin_Cookies.json")
+    print(headers, cookies)
     response = httpx.post(
         "https://api.leboncoin.fr/finder/search",
         headers=headers,
@@ -177,6 +178,8 @@ def get_prompt_from_make(input_dict: dict) -> str:
         cookies=cookies,
         # proxy=proxy,
     )
+    print(response)
+    response.raise_for_status()
     print(f"Filter - {response.status_code}")
     json_data = response.json()
     options = json_data.get("aggregations", {})
@@ -242,18 +245,15 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
         "listing_source": "direct-search",
     }
     print("Before modeling")
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=get_prompt_from_make(car_dict),
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=Filter,
-                system_instruction="You are an Intelligent Html Parser Bot, that prioritze data intergrity.",
-            ),
-        )
-    except Exception as e:
-        print(f"error - {e}")
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=get_prompt_from_make(car_dict),
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Filter,
+            system_instruction="You are an Intelligent Html Parser Bot, that prioritze data intergrity.",
+        ),
+    )
     print("Model response")
     car_filter: Filter = response.parsed
     km_from = abs(round(car_filter.mileage - mileage_plus_minus))
@@ -292,7 +292,6 @@ def get_filter_urls(car_dict: dict, mileage_plus_minus: int = 10000):
     return filter_urls
 
 
-@utils.runner
 def main(car_dict: dict, mileage_plus_minus) -> None:
     filter_urls = get_filter_urls(car_dict, mileage_plus_minus)
     filter_urls.reverse()

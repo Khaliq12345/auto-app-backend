@@ -3,20 +3,15 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Optional, Union
+from typing import Optional, Union
 
 import pandas as pd
 from fastapi import (
     Depends,
     FastAPI,
-    File,
-    HTTPException,
 )
-from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from postgrest.types import CountMethod
 from supabase import (
-    AuthApiError,
     Client,
     create_client,
 )
@@ -96,7 +91,6 @@ def check_if_id_supabase(
     return site_to_scrape
 
 
-@utils.runner
 def start_services(
     mileage_plus_minus: int,
     ignore_old: bool,
@@ -130,22 +124,27 @@ def start_services(
 
             # Verifying which to scrape from and submitting the tasks to the thread pool
             with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = []
                 if not sites_to_scrape:
                     for func in domain_functions:
-                        executor.submit(
+                        future = executor.submit(
                             domain_functions[func],
                             car_dict,
                             mileage_plus_minus,
                         )
+                        futures.append(future)
                 else:
                     for site_to_scrape in updated_sites_to_scrape:
                         if site_to_scrape in domain_functions:
-                            executor.submit(
+                            future = executor.submit(
                                 domain_functions[site_to_scrape],
                                 car_dict,
                                 mileage_plus_minus,
                             )
-
+                            futures.append(future)
+                # get the future results
+                for future in futures:
+                    future.result()
             # verify status
             if (row_id + 1) == len(df):
                 stats = "success"
@@ -162,17 +161,17 @@ def start_services(
                     "total_completed": row_id + 1,
                     "total_running": len(df),
                 }
-            ).eq("id", 1).execute()
+            ).eq("site", sites_to_scrape[0]).execute()
 
-    except Exception as e:
-        print(f"Error: {e}")
+    except (KeyboardInterrupt, Exception) as e:
+        print(f"Error: {str(e)}")
         client.table("Status").update(
             {
                 "id": 1,
                 "status": "failed",
                 "stopped_at": datetime.now().isoformat(),
             }
-        ).eq("id", 1).execute()
+        ).eq("site", sites_to_scrape[0]).execute()
         raise e
 
 

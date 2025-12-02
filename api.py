@@ -1,12 +1,13 @@
-from typing import Annotated
 from pathlib import Path
+from typing import Annotated
+
 from fastapi import (
     Depends,
     FastAPI,
     File,
     Form,
-    UploadFile,
     HTTPException,
+    UploadFile,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,16 +15,16 @@ from postgrest.types import CountMethod
 from supabase import (
     AuthApiError,
     Client,
-)
-from services import autoscout24, lacentrale, leboncoin
-from utilities import utils
-from supabase import (
     create_client,
 )
 from supabase.lib.client_options import SyncClientOptions
 
+from services import autoscout24, lacentrale, leboncoin
+from utilities import utils
 
 app = FastAPI()
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)  # Crée le dossier si absent
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,7 +51,6 @@ def get_session() -> Client:
     return client
 
 
-
 def get_avg_price_based_on_domain(
     records: list[dict],
     percentage_limit: int = 95,
@@ -68,6 +68,7 @@ def get_avg_price_based_on_domain(
         return sum(best_prices) / len(best_prices)
     else:
         return 0
+
 
 @app.post("/login")
 def login(
@@ -199,14 +200,6 @@ def get_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
-
-
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)  # Crée le dossier si absent
-
-
 @app.post("/upload-file")
 async def upload_file(
     file: UploadFile = File(...),
@@ -239,7 +232,7 @@ async def upload_file(
         filename = "25630.xlsx"
     else:
         # Remplacer les espaces par des _ et ajouter l'extension .json
-        filename = upload_type.replace(" ", "_") + ".json"
+        filename = upload_type.title().replace(" ", "_") + ".json"
 
     file_path = UPLOAD_DIR / filename
 

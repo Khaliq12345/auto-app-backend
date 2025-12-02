@@ -1,14 +1,16 @@
-from selectolax.parser import HTMLParser
+import json
+from datetime import datetime
+from time import sleep
+
+import httpx
 from google import genai
 from google.genai import types
-from model.model import Car, Match
-from config import config
-from utilities import utils
-from datetime import datetime
-import json
+from selectolax.parser import HTMLParser
 from the_retry import retry
-import httpx
-from time import sleep
+
+from config import config
+from model.model import Car, Match
+from utilities import utils
 
 client = genai.Client(api_key=config.GEMINI_API)
 
@@ -61,7 +63,7 @@ def get_percentage_match(car1_details: str, car2_details: str):
         return 0, None
 
 
-@retry(attempts=5, backoff=5, exponential_backoff=True)
+@retry(attempts=2, backoff=5, exponential_backoff=True)
 def get_the_listing_html(
     car_dict: dict,
     filter_url: str,
@@ -79,8 +81,12 @@ def get_the_listing_html(
     else:
         if domain == "https://www.lacentrale.fr/":
             proxy = f"http://{config.PROXY_USERNAME}:{config.PROXY_PASSWORD}@fr.decodo.com:40000"
-            lacentrale_headers = utils.get_json_from_local("./uploads/Lacentrale_Headers.json")
-            lacentrale_cookies = utils.get_json_from_local("./uploads/Lacentrale_Cookies.json")
+            lacentrale_headers = utils.get_json_from_local(
+                "./uploads/Lacentrale_Headers.json"
+            )
+            lacentrale_cookies = utils.get_json_from_local(
+                "./uploads/Lacentrale_Cookies.json"
+            )
             response = httpx.get(
                 filter_url,
                 cookies=lacentrale_cookies,
@@ -102,7 +108,6 @@ def get_the_listing_html(
                 json=json_data,
                 timeout=None,
             )
-            print(response)
             content = None
             if response.status_code != 200:
                 raise ValueError("Content is null")

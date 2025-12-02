@@ -4,6 +4,7 @@ import string
 import traceback
 from datetime import datetime
 
+import json_repair
 import pandas as pd
 from dateparser import parse
 from fastapi.encoders import jsonable_encoder
@@ -35,11 +36,8 @@ def get_json_from_local(path: str) -> dict | None:
     Charge un fichier JSON depuis le chemin spécifié.
     Retourne le contenu JSON ou None si le fichier n'existe pas ou n'est pas valide.
     """
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+    with open(path, "rb") as f:
+        return json_repair.loads(f.read())
 
 
 def get_text(node: Node | None):
@@ -148,18 +146,15 @@ def get_row_dict(df: pd.DataFrame, row_id: int):
 
 def save_to_db(data: dict | list[dict], table: str):
     print(f"SAVING - {len(data)}")
+    client: Client = create_client(
+        supabase_key=supabase_key,
+        supabase_url=url,
+    )
     try:
-        client: Client = create_client(
-            supabase_key=supabase_key,
-            supabase_url=url,
-        )
-        try:
-            client.table(table).insert(data).execute()
-        except Exception as _:
-            client.table(table).update(data).eq("id", data["id"]).execute()
-        return True
-    except Exception as e:
-        print(f"Saving Error - {e}")
+        client.table(table).insert(data).execute()
+    except Exception as _:
+        client.table(table).update(data).eq("id", data["id"]).execute()
+    return True
 
 
 def parse_and_save(car_dict: dict, cars: list[Car], site: str):
