@@ -1,7 +1,7 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
-  const backendUrl = "http://127.0.0.1:8500";
+  const backendUrl = config.backendUrl;
   const apiUrl = `${backendUrl}/scrape_status`;
 
   try {
