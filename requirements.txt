@@ -114,3 +114,5 @@ aiofiles
 dateparser
 hrequests[all]
 the-retry
+celery[redis]==5.4.0
+redis==5.0.1

@@ -21,6 +21,8 @@ from supabase import (
     create_client,
 )
 from supabase.lib.client_options import SyncClientOptions
+from celery_app import celery_app, start_services_task
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -259,3 +261,80 @@ async def upload_file(
         "path": str(file_path),
         "upload_type": upload_type,
     }
+
+
+class StartTaskRequest(BaseModel):
+    mileage_plus_minus: int = 10000
+    ignore_old: bool = False
+    sites_to_scrape: list[str] = ["leboncoin", "lacentrale"]
+    dev: bool = True
+    car_id: int | str | None = None
+
+
+@app.post("/start-task")
+def start_task(request: StartTaskRequest):
+    """
+    Start the scraping task in the background using Celery.
+    Returns a task_id for future usage.
+    """
+    try:
+        # Update Status table to indicate task is starting
+        client = get_session()
+        client.table("Status").update(
+            {
+                "id": 1,
+                "status": "starting",
+                "stopped_at": None,
+                "total_completed": 0,
+                "total_running": 0,
+            }
+        ).eq("id", 1).execute()
+
+        # Start the Celery task
+        task = start_services_task.delay(
+            mileage_plus_minus=request.mileage_plus_minus,
+            ignore_old=request.ignore_old,
+            sites_to_scrape=request.sites_to_scrape,
+            dev=request.dev,
+            car_id=request.car_id,
+        )
+
+        return {
+            "message": "Task started successfully",
+            "task_id": task.id,
+            "status": "started",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start task: {str(e)}")
+
+
+@app.post("/stop-task/{task_id}")
+def stop_task(task_id: str):
+    """
+    Stop a running Celery task by its task_id.
+    """
+    try:
+        # Revoke the task with terminate=True for immediate stop
+        celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
+
+        # Update Status table to indicate task was stopped
+        client = get_session()
+        from datetime import datetime
+
+        client.table("Status").update(
+            {
+                "id": 1,
+                "status": "stopped",
+                "stopped_at": datetime.now().isoformat(),
+            }
+        ).eq("id", 1).execute()
+
+        return {
+            "message": "Task stop signal sent",
+            "task_id": task_id,
+            "status": "stopped",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stop task: {str(e)}")
