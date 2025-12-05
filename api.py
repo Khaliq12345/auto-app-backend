@@ -264,10 +264,10 @@ async def upload_file(
 
 
 class StartTaskRequest(BaseModel):
-    mileage_plus_minus: int = 10000
-    ignore_old: bool = False
-    sites_to_scrape: list[str] = ["leboncoin", "lacentrale"]
-    dev: bool = True
+    mileage_plus_minus: int | None = None
+    ignore_old: bool | None = None
+    sites_to_scrape: list[str]
+    dev: bool | None = None
     car_id: int | str | None = None
 
 
@@ -290,12 +290,17 @@ def start_task(request: StartTaskRequest):
             }
         ).eq("id", 1).execute()
 
+        # Use default values if None is provided
+        mileage = request.mileage_plus_minus if request.mileage_plus_minus is not None else 10000
+        ignore_old = request.ignore_old if request.ignore_old is not None else False
+        dev = request.dev if request.dev is not None else True
+
         # Start the Celery task
         task = start_services_task.delay(
-            mileage_plus_minus=request.mileage_plus_minus,
-            ignore_old=request.ignore_old,
+            mileage_plus_minus=mileage,
+            ignore_old=ignore_old,
             sites_to_scrape=request.sites_to_scrape,
-            dev=request.dev,
+            dev=dev,
             car_id=request.car_id,
         )
 
