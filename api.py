@@ -12,6 +12,7 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from postgrest.types import CountMethod
+from pydantic import BaseModel
 from supabase import (
     AuthApiError,
     Client,
@@ -19,6 +20,7 @@ from supabase import (
 )
 from supabase.lib.client_options import SyncClientOptions
 
+from celery_app import celery_app, start_services_task
 from services import autoscout24, lacentrale, leboncoin
 from utilities import utils
 
@@ -252,3 +254,77 @@ async def upload_file(
         "path": str(file_path),
         "upload_type": upload_type,
     }
+
+
+class StartTaskRequest(BaseModel):
+    mileage_plus_minus: int | None = None
+    ignore_old: bool | None = None
+    sites_to_scrape: list[str]
+    dev: bool | None = None
+    car_id: int | str | None = None
+
+
+@app.post("/start-task")
+def start_task(request: StartTaskRequest):
+    """
+    Start the scraping task in the background using Celery.
+    Returns a task_id for future usage.
+    """
+    try:
+        # Use default values if None is provided
+        mileage = (
+            request.mileage_plus_minus
+            if request.mileage_plus_minus is not None
+            else 10000
+        )
+        ignore_old = request.ignore_old if request.ignore_old is not None else False
+        dev = request.dev if request.dev is not None else True
+
+        # Start the Celery task
+        task = start_services_task.delay(
+            mileage_plus_minus=mileage,
+            ignore_old=ignore_old,
+            sites_to_scrape=request.sites_to_scrape,
+            dev=dev,
+            car_id=request.car_id,
+        )
+
+        return {
+            "message": "Task started successfully",
+            "task_id": task.id,
+            "status": "started",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start task: {str(e)}")
+
+
+@app.post("/stop-task/{task_id}")
+def stop_task(task_id: str):
+    """
+    Stop a running Celery task by its task_id.
+    """
+    try:
+        # Revoke the task with terminate=True for immediate stop
+        celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
+
+        # Update Status table to indicate task was stopped
+        client = get_session()
+        from datetime import datetime
+
+        client.table("Status").update(
+            {
+                "id": 1,
+                "status": "stopped",
+                "stopped_at": datetime.now().isoformat(),
+            }
+        ).eq("id", 1).execute()
+
+        return {
+            "message": "Task stop signal sent",
+            "task_id": task_id,
+            "status": "stopped",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stop task: {str(e)}")

@@ -110,3 +110,16 @@ export interface ScrapingStatusResponse {
   session: ScrapingStatusSession;
   details: ScrapingStatusDetails;
 }
+
+// StartScraperForm types
+export interface SiteOption {
+  label: string;
+  value: string;
+}
+
+export interface StartScraperFormState {
+  mileage_plus_minus: number | undefined;
+  ignore_old: boolean;
+  dev: boolean;
+  car_id: string;
+}

@@ -1,4 +1,3 @@
-from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
@@ -7,9 +6,7 @@ from typing import Optional, Union
 
 import pandas as pd
 from fastapi import (
-    Depends,
     FastAPI,
-)
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import (
     Client,
@@ -21,17 +18,7 @@ from config import config
 from services import autoscout24, lacentrale, leboncoin
 from utilities import utils
 
-args = ArgumentParser()
-args.add_argument("--mileage-plus-minus", type=int, default=10000)
-args.add_argument("--dev", action="store_true")
-args.add_argument("--ignore-old", action="store_true")
-args.add_argument("--sites-to-scrape", type=str, default="leboncoin:lacentrale")
-args.add_argument("--car-id", type=int, default=None)
-parsed_args = args.parse_args()
-print(parsed_args)
-
 OUT_FILE = Path(config.UPLOAD_FILE)
-session_deps = Depends()
 domains = [lacentrale.domain, autoscout24.domain, leboncoin.domain]
 domain_functions = {
     "lacentrale": lacentrale.main,
@@ -184,7 +171,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ArgumentParser doit être dans ce bloc pour éviter les conflits
+# quand le module est importé par FastAPI ou Celery
 if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--mileage-plus-minus", type=int, default=10000)
+    args.add_argument("--dev", action="store_true")
+    args.add_argument("--ignore-old", action="store_true")
+    args.add_argument("--sites-to-scrape", type=str, default="leboncoin:lacentrale")
+    args.add_argument("--car-id", type=int, default=None)
+    parsed_args = args.parse_args()
+    print(parsed_args)
+
     start_services(
         parsed_args.mileage_plus_minus,
         dev=parsed_args.dev,
@@ -192,6 +193,3 @@ if __name__ == "__main__":
         sites_to_scrape=parsed_args.sites_to_scrape.split(":"),
         car_id=parsed_args.car_id,
     )
-
-
-# Try to set up the api on the server.

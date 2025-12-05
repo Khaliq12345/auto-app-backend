@@ -90,6 +90,28 @@
                 {{ isUploading ? "Upload en cours..." : "Upload a new file" }}
             </UButton>
         </div>
+
+        <!-- Start Scraper Collapsible -->
+        <UCollapsible class="flex flex-col gap-2 mt-6">
+            <UButton
+                class="group"
+                label="Start Scraper"
+                color="neutral"
+                variant="subtle"
+                trailing-icon="i-lucide-chevron-down"
+                :ui="{
+                    trailingIcon:
+                        'group-data-[state=open]:rotate-180 transition-transform duration-200',
+                }"
+                block
+            />
+
+            <template #content>
+                <UCard class="mt-2">
+                    <StartScraperForm />
+                </UCard>
+            </template>
+        </UCollapsible>
     </UPageCard>
 </template>
 
