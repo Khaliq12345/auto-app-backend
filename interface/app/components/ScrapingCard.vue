@@ -10,20 +10,12 @@
                 <span class="text-base font-medium ui:text-gray-900">
                     Monitor the latest run status and metrics.
                 </span>
-                <UBadge
-                    :color="badgeColor"
-                    variant="soft"
-                    size="sm"
-                    class="font-medium"
-                >
-                    {{ badgeLabel }}
-                </UBadge>
             </div>
         </template>
 
         <!-- Desktop layout-->
         <section class="hidden sm:block">
-            <UPageGrid class="gap-4" :columns="{ sm: 1, md: 2, lg: 3 }">
+            <UPageGrid class="gap-4" :columns="{ sm: 1, md: 1, lg: 1 }">
                 <UCard
                     v-for="item in statusItems"
                     :key="item.id || item.started_at || item.created_at"
@@ -144,7 +136,10 @@
                 </template>
             </UAccordion>
         </section>
+
+        <!-- Upload files -->
         <div>
+            <div class="font-bold pt-5 pb-3 text-md">Upload Files</div>
             <URadioGroup
                 v-model="uploadType"
                 :items="uploadTypeItems"
