@@ -21,57 +21,134 @@
             </div>
         </template>
 
-        <UCard class="w-full border-none bg-background/60 shadow-none">
-            <div class="p-0">
-                <UPageGrid class="gap-4" :columns="{ base: 1, sm: 2 }">
-                    <template v-for="metric in metrics" :key="metric.label">
-                        <UCard
-                            class="bg-background border-border/40 shadow-sm"
-                            :class="
-                                metric.color ? `border-${metric.color}-500` : ''
-                            "
-                        >
-                            <div class="p-4">
-                                <div class="flex items-start gap-3">
-                                    <UIcon
-                                        :name="metric.icon"
-                                        :class="
-                                            metric.color
-                                                ? `text-${metric.color}-500`
-                                                : 'text-primary'
-                                        "
-                                        class="text-xl"
-                                    />
-                                    <div class="space-y-1">
-                                        <p
-                                            class="text-sm font-medium ui:text-gray-600"
-                                        >
-                                            {{ metric.label }}
-                                        </p>
-                                        <p
-                                            class="text-xl font-semibold tracking-tight ui:text-gray-900"
-                                        >
-                                            {{ metric.value }}
-                                        </p>
-                                        <p
-                                            v-if="metric.subtitle"
-                                            class="text-xs text-gray-500"
-                                        >
-                                            {{ metric.subtitle }}
-                                        </p>
-                                    </div>
-                                </div>
+        <!-- Desktop layout-->
+        <section class="hidden sm:block">
+            <UPageGrid class="gap-4" :columns="{ sm: 1, md: 2, lg: 3 }">
+                <UCard
+                    v-for="item in statusItems"
+                    :key="item.id || item.started_at || item.created_at"
+                    class="border shadow-sm"
+                    :class="statusStyle(item.status).card"
+                >
+                    <div class="flex items-start gap-3">
+                        <UIcon
+                            :name="statusStyle(item.status).icon"
+                            :class="statusStyle(item.status).iconClass"
+                            class="text-xl"
+                        />
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium ui:text-gray-600">
+                                Status
+                            </p>
+                            <p class="text-lg font-semibold capitalize">
+                                {{ statusLabel(item.status) }}
+                            </p>
+                            <p class="text-xs text-gray-600">
+                                Started:
+                                {{
+                                    formatDate(
+                                        item.started_at || item.created_at,
+                                    )
+                                }}
+                            </p>
+                            <p
+                                class="text-xs text-gray-600"
+                                v-if="item.stopped_at"
+                            >
+                                Stopped: {{ formatDate(item.stopped_at) }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div class="space-y-0.5">
+                            <p class="text-gray-600">Completed</p>
+                            <p class="text-base font-semibold">
+                                {{ item.total_completed ?? 0 }}
+                            </p>
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-gray-600">Running</p>
+                            <p class="text-base font-semibold">
+                                {{ item.total_running ?? 0 }}
+                            </p>
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-gray-600">Progress</p>
+                            <p class="text-base font-semibold">
+                                {{ formatProgress(item) }}
+                            </p>
+                        </div>
+                        <div class="space-y-0.5" v-if="item.errors">
+                            <p class="text-gray-600">Errors</p>
+                            <p class="text-base font-semibold text-error-600">
+                                {{ item.errors }}
+                            </p>
+                        </div>
+                    </div>
+                </UCard>
+            </UPageGrid>
+        </section>
+
+        <!-- Mobile layout -->
+        <section class="sm:hidden">
+            <UAccordion :items="mobileAccordionItems" type="multiple">
+                <template #body="{ item }">
+                    <div
+                        class="p-3 rounded-lg border"
+                        :class="statusStyle(item.raw?.status).card"
+                    >
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="space-y-0.5">
+                                <p class="text-gray-600">Completed</p>
+                                <p class="text-base font-semibold">
+                                    {{ item.raw?.total_completed ?? 0 }}
+                                </p>
                             </div>
-                        </UCard>
-                    </template>
-                </UPageGrid>
-            </div>
-        </UCard>
+                            <div class="space-y-0.5">
+                                <p class="text-gray-600">Running</p>
+                                <p class="text-base font-semibold">
+                                    {{ item.raw?.total_running ?? 0 }}
+                                </p>
+                            </div>
+                            <div class="space-y-0.5">
+                                <p class="text-gray-600">Progress</p>
+                                <p class="text-base font-semibold">
+                                    {{ formatProgress(item.raw) }}
+                                </p>
+                            </div>
+                            <div class="space-y-0.5" v-if="item.raw?.errors">
+                                <p class="text-gray-600">Errors</p>
+                                <p
+                                    class="text-base font-semibold text-error-600"
+                                >
+                                    {{ item.raw.errors }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500 space-y-1">
+                            <p>
+                                Started:
+                                {{
+                                    formatDate(
+                                        item.raw?.started_at ||
+                                            item.raw?.created_at,
+                                    )
+                                }}
+                            </p>
+                            <p v-if="item.raw?.stopped_at">
+                                Stopped: {{ formatDate(item.raw.stopped_at) }}
+                            </p>
+                        </div>
+                    </div>
+                </template>
+            </UAccordion>
+        </section>
         <div>
             <URadioGroup
                 v-model="uploadType"
                 :items="uploadTypeItems"
-                orientation="horizontal"
+                :orientation="isMobile ? 'vertical' : 'horizontal'"
                 class="mb-4"
             />
 
@@ -116,13 +193,17 @@
 </template>
 
 <script setup lang="ts">
-import type { ScrapingStatusResponse } from "~/types";
-import type { RadioGroupItem } from "@nuxt/ui";
+import type { ScrapingStatusItem, ScrapingStatusResponse } from "~/types";
+import type { AccordionItem, RadioGroupItem } from "@nuxt/ui";
+import { useResponsive } from "../../composables/useResponsive";
 
 const toast = useToast();
 const files = ref<File | null>(null);
 const uploadType = ref("Input File");
 const isUploading = ref(false);
+
+// Responsive detection using composable
+const { isMobile } = useResponsive();
 
 const uploadTypeItems: RadioGroupItem[] = [
     { label: "Input File", value: "Input File" },
@@ -197,78 +278,85 @@ const { data: scrapingStatus, error: fetchError } =
             error: error.message || "Failed to fetch status",
         }));
 
-const statusColor = {
-    success: "success",
-    failed: "error",
-    running: "info",
+const statusItems = computed<ScrapingStatusItem[]>(
+    () => scrapingStatus?.details?.data ?? [],
+);
+
+// accordion items for mobile
+const mobileAccordionItems = computed(() =>
+    statusItems.value.map((item, index) => ({
+        label: `${statusLabel(item.status)} · ${item.total_completed ?? 0}/${item.total_running ?? 0}`,
+        icon: statusStyle(item.status).icon,
+        value: String(item.id ?? index),
+        raw: item,
+        ui: {
+            trigger: statusStyle(item.status).triggerClass,
+        },
+    })),
+);
+
+const statusMap = {
+    success: {
+        card: "bg-success-50 border-success-200",
+        icon: "i-lucide-check-circle-2",
+        iconClass: "text-success-600",
+        badge: "success",
+        triggerClass: "text-success-700 bg-success-50 hover:bg-success-100",
+    },
+    failed: {
+        card: "bg-error-50 border-error-200",
+        icon: "i-lucide-x-circle",
+        iconClass: "text-error-600",
+        badge: "error",
+        triggerClass: "text-error-700 bg-error-50 hover:bg-error-100",
+    },
+    running: {
+        card: "bg-info-50 border-info-200",
+        icon: "i-lucide-loader-2 animate-spin",
+        iconClass: "text-info-600",
+        badge: "info",
+        triggerClass: "text-info-700 bg-info-50 hover:bg-info-100",
+    },
+    default: {
+        card: "bg-background border-border/50",
+        icon: "i-lucide-info",
+        iconClass: "text-gray-500",
+        badge: "neutral",
+        triggerClass: "",
+    },
 } as const;
 
-const statusLabel = {
-    success: "Success",
-    failed: "Failed",
-    running: "Running",
-} as const;
+const statusLabel = (status?: string) => {
+    const map: Record<string, string> = {
+        success: "Success",
+        failed: "Failed",
+        running: "Running",
+    };
+    return map[status ?? ""] || status || "Unknown";
+};
 
-// Use API data or fallback to default values
-const latestStatus = scrapingStatus?.details?.data?.[0];
-const status = latestStatus?.status || "success";
-const total_completed = latestStatus?.total_completed ?? 0;
-const total_running = latestStatus?.total_running ?? 0;
-const started_at = latestStatus?.started_at ?? latestStatus?.created_at;
-const stopped_at = latestStatus?.stopped_at ?? started_at;
-const last_updated = stopped_at ?? new Date().toISOString();
+const statusStyle = (status?: string) =>
+    statusMap[status as keyof typeof statusMap] ?? statusMap.default;
 
-// Calculate progress based on completed vs running totals
-const progress =
-    total_running > 0
-        ? Math.min(100, Math.round((total_completed / total_running) * 100))
-        : 0;
-const hasErrors = Boolean(latestStatus?.errors);
+const primaryStatus = computed(() => statusItems.value?.[0]);
 
 const badgeColor = fetchError
     ? "error"
-    : (statusColor[status as keyof typeof statusColor] ?? "neutral");
+    : statusStyle(primaryStatus.value?.status).badge;
 const badgeLabel = fetchError
     ? "API Error"
-    : (statusLabel[status as keyof typeof statusLabel] ?? status);
+    : statusLabel(primaryStatus.value?.status);
 
-const metrics = [
-    {
-        label: "Total completed",
-        icon: "i-heroicons-check-circle",
-        value: fetchError ? "N/A" : total_completed.toLocaleString(),
-        color: fetchError ? "error" : undefined,
-    },
-    {
-        label: "Total running",
-        icon: "i-heroicons-bolt",
-        value: fetchError ? "N/A" : total_running.toLocaleString(),
-        color: fetchError ? "error" : undefined,
-    },
-    {
-        label: "Progress",
-        icon: "i-heroicons-chart-bar",
-        value: fetchError ? "N/A" : `${progress}%`,
-        color: fetchError
-            ? "error"
-            : hasErrors
-              ? "error"
-              : progress === 100
-                ? "success"
-                : "info",
-    },
-    {
-        label: "Last updated",
-        icon: "i-heroicons-clock",
-        value: fetchError ? "N/A" : new Date(last_updated).toLocaleString(),
-        subtitle: fetchError
-            ? `🚨 API Error: ${fetchError}`
-            : hasErrors
-              ? `⚠️ Errors: ${latestStatus?.errors ?? "Unknown issue"}`
-              : started_at
-                ? `Started: ${new Date(started_at).toLocaleString()}`
-                : "No errors",
-        color: fetchError ? "error" : undefined,
-    },
-];
+function formatDate(value?: string) {
+    if (!value) return "N/A";
+    return new Date(value).toLocaleString();
+}
+
+function formatProgress(item: ScrapingStatusItem) {
+    const completed = item.total_completed ?? 0;
+    const running = item.total_running ?? 0;
+    if (running === 0) return "0%";
+    const ratio = Math.min(100, Math.round((completed / running) * 100));
+    return `${ratio}%`;
+}
 </script>
