@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${APP_PORT}:8500"
+      - "8500:8500"
     volumes:
       - ./uploads:/uploads
       - ./logs:/logs
