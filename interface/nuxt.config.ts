@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     mount: "../files/uploads",
   },
   runtimeConfig: {
-    // Variables privées (côté serveur uniquement)
     // Peut être surchargée par NUXT_BACKEND_URL dans le .env
     backendUrl: "http://157.180.69.73:8500",
     public: {
