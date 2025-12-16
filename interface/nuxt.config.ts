@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Variables privées (côté serveur uniquement)
     // Peut être surchargée par NUXT_BACKEND_URL dans le .env
-    backendUrl: "http://127.0.0.1:5000",
+    backendUrl: "",
     public: {
       // Variables publiques (côté client et serveur)
     },
