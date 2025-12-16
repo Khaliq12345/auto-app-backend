@@ -143,7 +143,6 @@ def start_services(
 
             client.table("Status").update(
                 {
-                    "id": 1,
                     "status": stats,
                     "stopped_at": stopped_at,
                     "total_completed": row_id + 1,
@@ -155,7 +154,6 @@ def start_services(
         print(f"Error: {str(e)}")
         client.table("Status").update(
             {
-                "id": 1,
                 "status": "failed",
                 "stopped_at": datetime.now().isoformat(),
             }

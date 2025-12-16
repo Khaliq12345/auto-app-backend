@@ -5,6 +5,7 @@ from urllib.parse import ParseResult, urlencode, urlunparse
 import httpx
 
 from browser import client, get_the_listing_html, types
+from config import config
 from model.model import Car, Filter
 from utilities import utils
 
@@ -33,6 +34,10 @@ def extract_10_cars(
     cars = []
     hits = json_or_soup["hits"]
     for hit in hits:
+        if not hit:
+            continue
+        if isinstance(hit, list):
+            hit = hit[0]
         item = hit.get("item")
         if not item:
             continue
@@ -114,10 +119,14 @@ def get_prompt_from_make(input_dict: dict) -> str:
     params["makesModelsCommercialNames"] = input_dict["make"]
     print(params)
     headers = utils.get_json_from_local("./uploads/Lacentrale_Headers.json")
+    proxy = (
+        f"http://{config.PROXY_USERNAME}:{config.PROXY_PASSWORD}@fr.decodo.com:40000"
+    )
     response = httpx.get(
         "https://recherche.lacentrale.fr/v5/aggregations",
         params=params,
         headers=headers,
+        proxy=proxy,
     )
     response.raise_for_status()
     print(f"Filter - {response.status_code}")

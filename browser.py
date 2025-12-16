@@ -26,6 +26,21 @@ HEADERS = {
     "authorization": f"Basic {config.SMART_PROXY}",
 }
 
+LACENTRALE_COOKIES = {
+    "access-token": "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTcyNDUyNTAsInZlcnNpb24iOiIyMDE4LTA3LTE2IiwidXNlckNvcnJlbGF0aW9uSWQiOm51bGwsInVzZXJfY29ycmVsYXRpb25faWQiOm51bGwsImxvZ2dlZFVzZXIiOnsiY29ycmVsYXRpb25JZCI6bnVsbCwicmVmcmVzaFRva2VuVFRMIjoxNzYxMTI5NjUwfSwibW9kZU1hc3F1ZXJhZGUiOmZhbHNlLCJhdXRob3JpemF0aW9ucyI6eyJ2ZXJzaW9uIjoiMjAxOC0wNy0xNiIsInN0YXRlbWVudHMiOlt7InNpZCI6IioiLCJlZmZlY3QiOiJEZW55IiwiYWN0aW9ucyI6WyIqIl0sInJlc291cmNlcyI6WyIqIl19XX0sImlhdCI6MTc1NzI0MTY1MH0.tx0GGQ_wYcTcK1g5_-z2czcZd97yKBGTjgjoUPKeDLYVFIUTFOhfQZe7rTicN8hB7DewDnzQuMsvkyLlzur9iLknLiOoKzFKQSirQMAkKmTakWRmCnqxqud7JNwi9tx0tbwg1K7oYxv5aIl4DyJARbFnQkks9KWF88OCv2gaRUOd9HOITXmKB7vpwUv9xtRtyQhQejI6mB7Or5L3YkomerYBXh3QUlo3h9klTmsMeeIhxNMc_SWNvaaraJnzTSJTT-MqNWeYQGSVR7omZRa4YeWfEXS45aPzx5RjdszhVTz74YRTBYyE8IL7495BNJFXJjmCGmEXnz9M19kVl3yn7A",
+    "kameleoonVisitorCode": "ghu7fueff",
+    "kameleoonTrackings": "%5B%7B%22Experiments.assignVariation%22%3A%22289282%2C1068407%22%2C%22Experiments.trigger%22%3A%22289282%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22298892%2C1150713%22%2C%22Experiments.trigger%22%3A%22298892%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22302730%2C1099455%22%2C%22Experiments.trigger%22%3A%22302730%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22304495%2C1103475%22%2C%22Experiments.trigger%22%3A%22304495%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313627%2C1127045%22%2C%22Experiments.trigger%22%3A%22313627%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22313978%2C1126422%22%2C%22Experiments.trigger%22%3A%22313978%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22315702%2C1130328%22%2C%22Experiments.trigger%22%3A%22315702%2Ctrue%22%7D%2C%7B%22Experiments.assignVariation%22%3A%22327940%2C1157938%22%2C%22Experiments.trigger%22%3A%22327940%2Ctrue%22%7D%5D",
+    "kameleoonFeatureFlags": "%5B%22composer-classified-composer%22%2C%22copy_af64u95oqng_copy_jr16u2dmikg__dev__cas__logged_cote-seeprice%22%2C%22copy_h6f1fpu0cbg_copy_dsg7dt33qvo__dev__cas__ab_highlight_area-highlight_depot%22%2C%22lacentrale-chat-2-0-13%22%2C%22new-financing-design-activated%22%2C%22one-click-call-activated%22%2C%22one-click-call-wording-activated%22%2C%22publicity-default%22%2C%22strengths-revamp-on%22%5D",
+    "visitor_id": "d79cf621-26aa-4ba5-86e7-abf6caa93543",
+    "_pprv": "eyJjb25zZW50Ijp7IjAiOnsibW9kZSI6ImVzc2VudGlhbCJ9LCI3Ijp7Im1vZGUiOiJvcHQtaW4ifX0sInB1cnBvc2VzIjp7IjAiOiJBTSIsIjciOiJETCJ9LCJfdCI6Im11eHo4bDBwfG1mOWtiM29wIn0%3D",
+    "atidvisitor251312": "%7B%22name%22%3A%22atidvisitor251312%22%2C%22val%22%3A%7B%22vrn%22%3A%22-251312-%22%7D%2C%22options%22%3A%7B%22path%22%3A%22%2F%22%2C%22session%22%3A15724800%2C%22end%22%3A15724800%7D%7D",
+    "tCdebugLib": "1",
+    "pa_vid": "%22d79cf621-26aa-4ba5-86e7-abf6caa93543%22",
+    "didomi_token": "eyJ1c2VyX2lkIjoiMTk5MjNjM2ItNGIxNS02MGUzLTkwOGMtMTE0MWJjOWU4YTkzIiwiY3JlYXRlZCI6IjIwMjUtMDktMDdUMTA6NDA6NTIuNDAxWiIsInVwZGF0ZWQiOiIyMDI1LTA5LTA3VDEwOjQwOjUyLjQwMloiLCJ2ZXJzaW9uIjpudWxsfQ==",
+    "atuserid": "%7B%22name%22%3A%22atuserid%22%2C%22val%22%3A%22d79cf621-26aa-4ba5-86e7-abf6caa93543%22%2C%22options%22%3A%7B%22end%22%3A%222026-03-08T10%3A47%3A05.147Z%22%2C%22path%22%3A%22%2F%22%7D%7D",
+    "datadome": "_BTvZHaw9eXcTRGcc0dP4NZGdVPGRU~AvwWo1N4xKB23ru6XDutJBZAptGxN8VRMRtpPG2qIvxEE4AUbjxA9fXOglHMpTPK6ZHKpM6gmPgWJXys08mnKGd9BFVg1HPFN",
+}
+
 
 def prompt(car1_details: str, car2_details: str) -> str:
     return f"""
@@ -84,12 +99,9 @@ def get_the_listing_html(
             lacentrale_headers = utils.get_json_from_local(
                 "./uploads/Lacentrale_Headers.json"
             )
-            lacentrale_cookies = utils.get_json_from_local(
-                "./uploads/Lacentrale_Cookies.json"
-            )
             response = httpx.get(
                 filter_url,
-                cookies=lacentrale_cookies,
+                cookies=LACENTRALE_COOKIES,
                 headers=lacentrale_headers,
                 # proxy=proxy,
             )
@@ -114,6 +126,8 @@ def get_the_listing_html(
             json_data = response.json()
             if json_data.get("results"):
                 content = json_data.get("results")[0]["content"]
+            else:
+                print("NO OUTPUTS")
 
             if not content:
                 raise ValueError("Content is null")

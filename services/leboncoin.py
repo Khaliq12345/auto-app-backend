@@ -26,7 +26,8 @@ def extract_10_cars(
     soup: HTMLParser, domain: str, parent_car_id: int, updated_at: str
 ) -> list[Car] | None:
     cars = []
-    ads = soup.css('li[class="styles_adCard__JzKik"]')
+    ads = soup.css('article[data-test-id="ad"]')
+    print("Total ads ", len(ads))
     for ad in ads[:10]:
         article = ad.css_first("article")
         if article.attributes.get("data-test-id") != "ad":
