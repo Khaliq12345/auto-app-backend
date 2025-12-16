@@ -23,7 +23,7 @@ services:
     build: .
     env_file:
       - .env
-    command: celery -A celery_app worker --loglevel=info
+    command: celery -A celery_app worker --loglevel=info -c 1
     volumes:
       - ./uploads:/uploads
       - ./logs:/logs
