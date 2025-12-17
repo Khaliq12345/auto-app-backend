@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     // Peut être surchargée par NUXT_BACKEND_URL dans le .env
-    backendUrl: "http://157.180.69.73:8500",
+    backendUrl: "",
     public: {
       // Variables publiques (côté client et serveur)
     },
