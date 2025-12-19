@@ -260,7 +260,7 @@ class StartTaskRequest(BaseModel):
     mileage_plus_minus: int | None = None
     ignore_old: bool | None = None
     sites_to_scrape: list[str]
-    dev: bool | None = None
+    dev: bool | None = False
     car_id: int | str | None = None
 
 
@@ -278,7 +278,7 @@ def start_task(request: StartTaskRequest):
             else 10000
         )
         ignore_old = request.ignore_old if request.ignore_old is not None else False
-        dev = request.dev if request.dev is not None else True
+        dev = request.dev if request.dev is not None else False
 
         # Start the Celery task
         task = start_services_task.delay(
