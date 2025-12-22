@@ -54,6 +54,12 @@
 
                     <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                         <div class="space-y-0.5">
+                            <p class="text-gray-600">Site</p>
+                            <p class="text-base font-semibold">
+                                {{ item.site }}
+                            </p>
+                        </div>
+                        <div class="space-y-0.5">
                             <p class="text-gray-600">Completed</p>
                             <p class="text-base font-semibold">
                                 {{ item.total_completed ?? 0 }}
@@ -65,16 +71,10 @@
                                 {{ item.total_running ?? 0 }}
                             </p>
                         </div>
-                        <div class="space-y-0.5">
-                            <p class="text-gray-600">Progress</p>
-                            <p class="text-base font-semibold">
-                                {{ formatProgress(item) }}
-                            </p>
-                        </div>
-                        <div class="space-y-0.5" v-if="item.errors">
+                        <div class="space-y-0.5" v-if="item.status == 'failed'">
                             <p class="text-gray-600">Errors</p>
                             <p class="text-base font-semibold text-error-600">
-                                {{ item.errors }}
+                                Kindly refresh the cookies and header
                             </p>
                         </div>
                     </div>
@@ -91,6 +91,12 @@
                         :class="statusStyle(item.raw?.status).card"
                     >
                         <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="space-y-0.5">
+                                <p class="text-gray-600">Site</p>
+                                <p class="text-base font-semibold">
+                                    {{ item.raw?.site }}
+                                </p>
+                            </div>
                             <div class="space-y-0.5">
                                 <p class="text-gray-600">Completed</p>
                                 <p class="text-base font-semibold">
@@ -109,12 +115,15 @@
                                     {{ formatProgress(item.raw) }}
                                 </p>
                             </div>
-                            <div class="space-y-0.5" v-if="item.raw?.errors">
+                            <div
+                                class="space-y-0.5"
+                                v-if="item.raw?.status == 'failed'"
+                            >
                                 <p class="text-gray-600">Errors</p>
                                 <p
                                     class="text-base font-semibold text-error-600"
                                 >
-                                    {{ item.raw.errors }}
+                                    Kindly refresh the cookies and headers
                                 </p>
                             </div>
                         </div>

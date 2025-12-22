@@ -134,6 +134,7 @@ def get_all_cars(
         for vehicle in response.data:
             comparison_prices = [x["price"] for x in vehicle["comparisons"]]
             comparison_prices = [0] if not comparison_prices else comparison_prices
+            vehicle["price_with_tax"] = vehicle["price_with_tax"] + 500
             vehicle["lowest_price"] = min(comparison_prices)
             vehicle["average_price"] = sum(comparison_prices) / len(comparison_prices)
             avg_price = get_avg_price_based_on_domain(
